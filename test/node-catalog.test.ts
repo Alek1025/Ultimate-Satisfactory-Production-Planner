@@ -26,14 +26,14 @@ describe('bundled 1.2 node catalog', () => {
     }
   });
 
-  it.skipIf(!hasFixture('default.sav'))('default save resolves to the base map', () => {
+  it.skipIf(!hasFixture('default.sav', 'en-US.json'))('default save resolves to the base map', () => {
     const r = resolveNodes(summary('default.sav'), gameData(), catalog);
     const got = Object.fromEntries([...r.counts].map(([k, c]) => [k, [c.impure, c.normal, c.pure]]));
     expect(got).toEqual(BASE_MAP);
     expect(r.assumptions[0]).toMatch(/resource type for 577 node\(s\), purity for 577 node\(s\)/);
   });
 
-  it.skipIf(!hasFixture('random-nodes.sav', 'resource-rich-random-purity.sav'))('save overrides win: all-pure, strict and rich saves', () => {
+  it.skipIf(!hasFixture('all-pure-nodes.sav', 'random-nodes.sav', 'resource-rich-random-purity.sav', 'en-US.json'))('save overrides win: all-pure, strict and rich saves', () => {
     const pure = resolveNodes(summary('all-pure-nodes.sav'), gameData(), catalog);
     expect([...pure.counts.values()].every((c) => c.impure === 0 && c.normal === 0)).toBe(true);
     expect(pure.counts.get('Desc_OreIron_C')!.pure).toBe(127);
@@ -53,7 +53,7 @@ describe('bundled 1.2 node catalog', () => {
     for (const e of catalog.entries.values()) if (e.kind === 'well-satellite') expect(cores.get(e.wellCore!)).toBe(e.resource);
   });
 
-  it('agrees with what extractors in played saves are actually producing', () => {
+  it.skipIf(!hasFixture('obsidian-gears.sav', 'max-milestone-multiplier.sav', 'all-pure-nodes.sav'))('agrees with what extractors in played saves are actually producing', () => {
     let checked = 0;
     for (const f of ['obsidian-gears.sav', 'max-milestone-multiplier.sav', 'all-pure-nodes.sav']) {
       const p = readSave(fixture(f));

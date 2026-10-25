@@ -2,6 +2,7 @@
   "name": "satisfactory-planner",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "description": "Ultimate Satisfactory Production Planner — save/game-data parsing, LP solver and plan storage (Update 1.2)",
   "scripts": {

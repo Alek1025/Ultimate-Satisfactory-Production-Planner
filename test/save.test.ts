@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { readSave } from '../src/save/save-reader';
 import { readSaveHeader } from '../src/save/header';
 import { summarizeSave, summarizeSaveBytes, checkVersion } from '../src/save/extract';
 import { SaveFormatError } from '../src/save/binary-reader';
 import { resolveNodes, parseNodeCatalog } from '../src/gamedata/node-catalog';
+import type { SaveSummary } from '../src/save/summary-types';
 import { fixture, gameData, SAVES, PRESENT_SAVES, hasFixture } from './fixtures';
 
 describe.each(Object.entries(PRESENT_SAVES))('save fixture %s', (file, exp) => {
@@ -84,7 +85,7 @@ describe.each(Object.entries(PRESENT_SAVES))('save fixture %s', (file, exp) => {
 });
 
 describe('cross-save invariants', () => {
-  it('node ids and positions are identical across all three saves', () => {
+  it.skipIf(Object.keys(PRESENT_SAVES).length < 3 || !hasFixture('en-US.json'))('node ids and positions are identical across all three saves', () => {
     const sets = Object.keys(PRESENT_SAVES).map((f) => summarizeSave(readSave(fixture(f)), gameData()).nodes.map((n) => `${n.id}@${n.position.map(Math.round).join(',')}`).join('|'));
     expect(sets[1]).toBe(sets[0]);
     expect(sets[2]).toBe(sets[0]);
@@ -104,9 +105,13 @@ describe('version policy', () => {
   });
 });
 
-describe('node catalog resolution', () => {
-  const s = summarizeSave(readSave(fixture('all-pure-nodes.sav')), gameData());
-  const first = s.nodes.find((n) => n.kind === 'resource-node')!;
+describe.skipIf(!hasFixture('all-pure-nodes.sav', 'en-US.json'))('node catalog resolution', () => {
+  let s: SaveSummary;
+  let first: SaveSummary['nodes'][number];
+  beforeAll(() => {
+    s = summarizeSave(readSave(fixture('all-pure-nodes.sav')), gameData());
+    first = s.nodes.find((n) => n.kind === 'resource-node')!;
+  });
   it('save override beats catalog purity', () => {
     const cat = parseNodeCatalog({ source: 'test', gameVersion: '1.2', entries: [{ id: first.id, kind: 'resource-node', resource: 'Desc_OreIron_C', purity: 'impure' }] });
     const r = resolveNodes(s, gameData(), cat);

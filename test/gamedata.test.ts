@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { readDocsFile, parseGameData, parseLabels } from '../src/gamedata/docs-parser';
 import { parseUEText, classNameFromPath, parseItemAmounts } from '../src/gamedata/ue-text';
 import { decodeText, detectEncoding } from '../src/util/text-decode';
 import { fixture, gameData, hasFixture } from './fixtures';
+import type { GameData } from '../src/gamedata/types';
 
 describe('encoding detection', () => {
   const enc = (s: string, kind: 'le' | 'be', bom: boolean) => {
@@ -18,7 +19,7 @@ describe('encoding detection', () => {
     expect(decodeText(new Uint8Array([0xef, 0xbb, 0xbf, 0x5b, 0x5d])).text).toBe('[]');
     expect(decodeText(new TextEncoder().encode('[]')).encoding).toBe('utf-8');
   });
-  it.skipIf(!hasFixture('da.json', 'he.json'))('detects the shipped Docs files as UTF-16LE with BOM', () => {
+  it.skipIf(!hasFixture('en-US.json', 'da.json', 'he.json'))('detects the shipped Docs files as UTF-16LE with BOM', () => {
     for (const f of ['en-US.json', 'da.json', 'he.json']) expect(detectEncoding(fixture(f))).toBe('utf-16le');
   });
 });
@@ -43,12 +44,13 @@ describe('UE ExportText parser', () => {
   });
 });
 
-describe('game data model', () => {
-  const gd = gameData();
+describe.skipIf(!hasFixture('en-US.json'))('game data model', () => {
+  let gd: GameData;
+  beforeAll(() => { gd = gameData(); });
 
   it('parses without warnings', () => { expect(gd.warnings).toEqual([]); });
 
-  it.skipIf(!hasFixture('da.json', 'he.json'))('is identical for every language file (labels only differ)', () => {
+  it.skipIf(!hasFixture('en-US.json', 'da.json', 'he.json'))('is identical for every language file (labels only differ)', () => {
     const da = readDocsFile(fixture('da.json'));
     const he = readDocsFile(fixture('he.json'));
     expect(parseGameData(da).contentHash).toBe(gd.contentHash);

@@ -1,4 +1,4 @@
-/* Design tokens: see claude/ui-design.md in the project. Dark only for now. */
+/* Design tokens: see "UI design" in DESIGN.md. Dark only for now. */
 :root {
   --ground: #121417;
   --canvas: #15181b;
