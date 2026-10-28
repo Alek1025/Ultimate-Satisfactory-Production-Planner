@@ -3,7 +3,7 @@
  * surplus), item edges between them, and modules (related recipes that collapse into one box).
  * Pure functions, no React: easy to test and reuse.
  */
-import type { PlanResult, Label } from '../../src';
+import { hasSurplus, type PlanResult, type Label } from '../../src';
 
 export type BoxKind = 'raw' | 'supply' | 'recipe' | 'module' | 'out' | 'surplus';
 
@@ -152,7 +152,7 @@ export function buildFullGraph(r: PlanResult, label: Label, fluid: (item: string
       });
       addC(f.item, id, f.delivered);
     }
-    if (f.surplus > 1e-6) surplusItems.push({ item: f.item, rate: f.surplus });
+    if (hasSurplus(f)) surplusItems.push({ item: f.item, rate: f.surplus });
   }
   if (surplusItems.length) {
     box({

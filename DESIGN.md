@@ -369,7 +369,7 @@ replace them.
 | Visual direction | FICSIT industrial: dark UI, safety-orange accent, hazard-stripe top bar |
 | Main layout | Split: request editor on the left, results on the right, request panel collapsible |
 | Primary results view | Flow graph tab, shown by default; other views are tabs beside it, not separate pages |
-| Graph at scale | Modules by default (related recipes collapsed into one box); expand any module; focus a box to fade everything outside its chain; search, minimap, zoom |
+| Graph at scale | Modules by default (related recipes collapsed into one box); expand any module; focus a box to fade everything outside its chain; search, minimap, drag to pan, wheel to zoom |
 | Node exclusion | Schematic map from save positions (no game map image) plus a resource list |
 | Node colour | Colour = resource; purity = size and fill; exclusion = × mark |
 | Short of target | Results pane switches mode: blockers, then a one-click smallest fix |
@@ -453,7 +453,7 @@ wells.
 - **Content:** a wrapping flex row.
   - Request panel: `flex: 1 1 320px; max-width: 380px`.
   - Results: `flex: 999 1 560px`.
-  - Below about 900px they stack; wide tables and the graph scroll inside their own boxes.
+  - Below about 900px they stack; wide tables scroll inside their own boxes, and the graph pans inside its box.
 - **Pinned banner slot** under the top bar for app-wide conditions (no storage). It's the only place a message shows on every screen.
 
 ### Screens
@@ -506,11 +506,11 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 **What a box is:**
 - One box per placed recipe *variant*: a boosted Smelter group and a plain Smelter group are two boxes, so where Somersloops and shards went stays visible. The boosted box gets an amber border and an amber clock line.
 - Extraction boxes carry the resource colour dot, extractor count × type, purity and clock.
-- Delivered boxes (blue) show delivered vs target. One **Surplus** box (amber) collects leftovers and byproducts nothing uses; later it becomes the AWESOME Sink hook.
+- Delivered boxes (blue) show delivered vs target. One **Surplus** box (amber) collects leftovers and byproducts nothing uses; later it becomes the AWESOME Sink hook. Rounding noise isn't surplus: an item needs at least 0.01/min and 0.01% of its throughput left over, the same rule "Why this plan" uses.
 
 **Layers and bands:**
-- Top to bottom: raw resources in a top band, then recipes by longest-path depth, then delivered and surplus in a bottom band.
-- Vertical layering fits beside the request panel, which a left-to-right layout didn't.
+- Left to right: raw resources in a left band, then recipes by longest-path depth, then delivered and surplus in a right band.
+- Left to right reads like a production line. A wide graph doesn't have to fit beside the request panel, because the canvas pans and zooms freely.
 
 **Modules (level of detail):**
 - Related recipes form a module: Iron line, Steel & concrete, Copper line, Electronics, Aluminum line.
@@ -520,16 +520,16 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 - **Grouping rule for the real app:** start from a fixed item → module map (iron, steel, copper, caterium, quartz, oil, aluminum, electronics, nuclear, …), then fold in any recipe whose output feeds only one module. Modules with one recipe aren't grouped. Users never configure this.
 
 **Edges:**
-- Orthogonal routing. All edges leaving a box share one trunk from its bottom centre and split on a lane in the gap below, so an item that feeds many recipes reads as one bus, not a fan of crossings.
-- Inputs enter spread across the target's top edge. Edges that skip layers pass through reserved gaps, never across a box.
+- Orthogonal routing. All edges leaving a box share one trunk from its right side and split on a lane in the gap beyond, so an item that feeds many recipes reads as one bus, not a fan of crossings.
+- Inputs enter spread across the target's left edge. Edges that skip layers pass through reserved gaps, never across a box.
 - Colour:
   - Raw items keep their resource colour.
   - Deliveries are blue.
   - Everything else is neutral grey.
 - Style:
   - Byproducts are dotted.
-  - **Loops back up the chain** (e.g. water from Aluminum Scrap back to Alumina Solution) are dashed teal. They run in a channel down the right edge, labelled "↺ Water 15".
-- Labels are mono rates per minute, or "N lines" in Belt lines mode (best unlocked belt and pipe), on a small ground-coloured pill near the target.
+  - **Loops back up the chain** (e.g. water from Aluminum Scrap back to Alumina Solution) run right to left, against the flow. They're dashed teal and labelled "↺ Water 15".
+- Labels are mono rates per minute, or "N lines" in Belt lines mode (best unlocked belt and pipe), on a small ground-coloured pill just left of the arrowhead.
 
 **Focus:**
 - Clicking a box or module focuses it. Its whole upstream and downstream chain stays lit with accent-orange edges; everything else fades to about 25%.
@@ -542,9 +542,10 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
   - Actions: Expand module, Collapse module, In Buildings table.
 
 **Navigate:**
-- "Find in graph" search over item and recipe names and modules. Choosing a result inside a collapsed module expands it, selects the box and scrolls to it.
-- Zoom − / % / + (30–150%, kept centred) and Fit.
-- A minimap in the bottom-right shows every box (focused chain lit) and the viewport; clicking it moves the view.
+- "Find in graph" search over item and recipe names and modules. Choosing a result inside a collapsed module expands it, selects the box and centres the view on it.
+- Click and drag anywhere (boxes included) to pan, with no edges to stop at. A press that moves less than 4px is still a click, and a drag never selects a box.
+- The wheel (or trackpad pinch) zooms around the cursor without scrolling the page. Zoom − / % / + (20–200%, kept centred) and Fit (whole graph, centred).
+- A minimap in the bottom-right shows every box (focused chain lit) and the viewport; clicking it centres the view there.
 
 **Implementation:**
 - Use ELK `layered` in a worker, with orthogonal edge routing.
@@ -601,7 +602,7 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 #### Phone width
 - Same page at 390px. It opens on the results with the request panel collapsed.
 - The stat strip goes to two columns, and tabs and toolbars wrap.
-- The graph scrolls sideways in its box.
+- The graph pans and zooms inside its box; one-finger drag pans.
 - If phone use matters, a Request / Results switch would beat stacking the two panels.
 
 ### Empty and error states
@@ -699,7 +700,7 @@ How the real UI in `app/` is built and what's done, on top of the parser, solver
   - every production recipe with its status (runnable / building-locked / not unlocked) and per-building rates;
   - assumptions.
 - **Protocol** (`app/engine/protocol.ts`): typed requests (`loadDocs`, `loadSave`, `useSummary`, `solve`) and error kinds (`not-docs`, `unsupported-version`, `corrupt`, `needs-game-data`, `solver`). An engine crash shows as "The planner engine couldn't start", never as a wrong-file error.
-- **Graph layout** (`app/graph/layout.ts`): ELK layered layout (top to bottom, orthogonal edges, raw resources pinned to the first layer, deliveries and surplus to the last) in **its own** worker via `elk-api` + `elk-worker.min.js`. ELK's bundled build can't run inside the engine worker: it takes over that worker's message handler.
+- **Graph layout** (`app/graph/layout.ts`): ELK layered layout (left to right, orthogonal edges, raw resources pinned to the first layer, deliveries and surplus to the last) in **its own** worker via `elk-api` + `elk-worker.min.js`. ELK's bundled build can't run inside the engine worker: it takes over that worker's message handler.
 - **UI state** (`app/state.tsx`): the browser platform and `PlanStore` run on the UI thread. The engine's loaded save always follows the active plan's save summary. Plan actions: open, new, rename, duplicate, delete (opens the next plan), export, import.
 - **Persistence:**
   - The Docs bytes are stored under `app:docs` and re-parsed on start.
@@ -714,7 +715,7 @@ How the real UI in `app/` is built and what's done, on top of the parser, solver
 ### Flow graph (`app/graph/`)
 
 - **`model.ts`** builds the graph from a `PlanResult`:
-  - Boxes: one per extraction resource, per recipe variant, per used manual supply, per delivery, plus one Surplus box.
+  - Boxes: one per extraction resource, per recipe variant, per used manual supply, per delivery, plus one Surplus box for items that pass `hasSurplus` (at least 0.01/min and 0.01% of throughput; shared with `explain`).
   - Edges: each item's production is split across its consumers in proportion. Every recipe receives exactly what it consumes; the unit tests check this.
   - Byproduct outputs (a recipe's second and later products) are marked as byproducts.
 - **Modules:** a fixed item → family table (iron, steel & concrete, copper, caterium, quartz, oil & fuel, aluminum, electronics, motors & frames, coal & sulfur, nuclear, quantum & SAM). Families with 2+ recipes in the plan become modules.
@@ -722,9 +723,10 @@ How the real UI in `app/` is built and what's done, on top of the parser, solver
   - Edges between collapsed modules are merged per pair.
 - **`FlowGraph.tsx`:**
   - Each layout is kept together with the graph it was computed for, so changing the detail level never draws new boxes against old coordinates.
-  - Loops are edges that run upward after layout (dashed teal, "↺"). Byproducts are dotted. Raw items keep their resource colour, and deliveries are blue.
+  - Loops are edges that run leftward after layout (dashed teal, "↺"). Byproducts are dotted. Raw items keep their resource colour, and deliveries are blue.
   - Focus lights the upstream and downstream chain. The drawer has in/out lists that jump between boxes, plus module contents.
-  - Search expands a collapsed module and scrolls to the match. Zoom runs 30–150%, with Fit; the first layout fits the width. There's a clickable minimap.
+  - The canvas is a camera (translate + scale), not a scroll box, so panning has no bounds. Drag pans (pointer capture after 4px; the click after a drag is swallowed). A native non-passive wheel listener zooms around the cursor, 20–200%.
+  - Search expands a collapsed module and centres on the match. Fit centres the whole graph; the first layout fits it, between 40% and 100%. There's a clickable minimap.
   - Rates below 0.005/min show as "<0.01".
 
 ### Nodes, Recipes, Plans

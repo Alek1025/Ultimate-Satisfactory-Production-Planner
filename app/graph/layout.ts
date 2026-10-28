@@ -1,6 +1,6 @@
 /**
  * ELK layered layout in its own Web Worker (elkjs' intended setup: elk-api on this side,
- * elk-worker in a classic worker). Top-to-bottom, orthogonal edges, raw resources pinned
+ * elk-worker in a classic worker). Left-to-right, orthogonal edges, raw resources pinned
  * to the first layer and deliveries/surplus to the last.
  */
 import ELK from 'elkjs/lib/elk-api.js';
@@ -16,10 +16,11 @@ export async function layoutGraph(g: LayoutInput): Promise<LayoutOutput> {
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
+      'elk.direction': 'RIGHT',
       'elk.edgeRouting': 'ORTHOGONAL',
       'elk.spacing.nodeNode': '28',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '84',
+      // Wide enough for the rate labels that sit just before each arrowhead.
+      'elk.layered.spacing.nodeNodeBetweenLayers': '120',
       'elk.layered.spacing.edgeNodeBetweenLayers': '18',
       'elk.layered.spacing.edgeEdgeBetweenLayers': '10',
       'elk.spacing.edgeEdge': '10',

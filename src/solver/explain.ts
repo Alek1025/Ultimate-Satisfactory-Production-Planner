@@ -3,7 +3,7 @@
  * what it did, and what it spends. Labels come from the loaded locale (any language);
  * without one, ClassNames are turned into readable fallbacks.
  */
-import type { LevelResult, LimitRef, PlanningProblem, PlanResult } from './types';
+import type { ItemFlow, LevelResult, LimitRef, PlanningProblem, PlanResult } from './types';
 import type { EffectiveRequest } from './validate';
 
 export type Label = (id: string) => string;
@@ -12,6 +12,11 @@ export type Label = (id: string) => string;
 export function fallbackLabel(id: string): string {
   const core = id.replace(/^(Desc|Recipe|Build|BP)_/, '').replace(/_C$/, '').replace(/^Alternate_/, 'Alternate: ');
   return core.replace(/_/g, ' ').replace(/([a-z])([A-Z0-9])/g, '$1 $2').replace(/\s+/g, ' ').trim();
+}
+
+/** Surplus worth reporting: at least 0.01/min and 0.01% of the item's throughput; anything less is rounding noise. */
+export function hasSurplus(i: ItemFlow): boolean {
+  return i.surplus > Math.max(0.01, 1e-4 * (i.produced + i.extracted));
 }
 
 export function makeLabel(names?: Map<string, string>): Label {
@@ -158,7 +163,7 @@ export function explain(problem: PlanningProblem, req: EffectiveRequest, r: Omit
   out.push(`${r.buildingCount} buildings: ${[...byBuilding].sort((a, b) => b[1] - a[1]).map(([b, n]) => `${n} × ${label(b)}`).join(', ')}${r.pass === 'integer' ? '' : ' (fractional amounts rounded up)'}.`);
   const busy = r.items.filter((i) => (i.lines?.count ?? 0) > 1).sort((a, b) => b.lines!.count - a.lines!.count).slice(0, 5);
   if (busy.length) out.push(`Flows that need more than one line: ${busy.map((i) => `${label(i.item)} ${i.lines!.count} × ${label(i.lines!.transport)}`).join(', ')}.`);
-  const surplus = r.items.filter((i) => i.surplus > Math.max(0.01, 1e-4 * (i.produced + i.extracted)) && !req.maximize.includes(i.item));
+  const surplus = r.items.filter((i) => hasSurplus(i) &&!req.maximize.includes(i.item));
   if (surplus.length) out.push(`Surplus to sink or store: ${surplus.map((i) => amount(problem, label, i.item, i.surplus)).join(', ')}.`);
   const manual = r.items.filter((i) => i.manualAvailable > 0);
   if (manual.length) out.push(`Manual inputs used: ${manual.map((i) => `${fmt(i.manualUsed)} of ${fmt(i.manualAvailable)} ${label(i.item)}${rateUnit(problem, i.item)}`).join(', ')}.`);

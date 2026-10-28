@@ -20,7 +20,8 @@ built app makes no network requests.
 - **You choose the trade-offs:** reorder the priorities (meet targets, maximize, save scarce
   resources, save power, fewer buildings). You can ask for whole buildings or allow fractions.
 - **Flow graph:** the whole factory as a graph, with related recipes grouped into modules you can
-  expand. Click any box to highlight its supply chain. Includes search, zoom and a minimap.
+  expand. It reads left to right, from raw resources to deliveries. Click any box to highlight its
+  supply chain; drag to pan and scroll to zoom. Includes search and a minimap.
 - **When a target can't be met:** it shows what's in the way and the smallest change that would
   fix it, and explains why an item can't be made at all in your save.
 - **Nodes and recipes:** exclude nodes on a map of your world, cap resources, and turn off recipes

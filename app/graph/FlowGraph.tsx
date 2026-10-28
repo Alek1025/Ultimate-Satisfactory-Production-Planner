@@ -1,5 +1,5 @@
-/** Flow graph tab: ELK layout, modules, focus with a detail drawer, search, zoom and minimap. */
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+/** Flow graph tab: ELK layout, modules, focus with a detail drawer, search, pan/zoom and minimap. */
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { useApp } from '../state';
 import { buildFullGraph, collapse, type Box, type Edge, type Graph } from './model';
 import type { LayoutOutput } from '../engine/protocol';
@@ -8,6 +8,10 @@ import { Icon, num } from '../ui/kit';
 import { RESOURCE_COLOR, resourceColor } from '../ui/resources';
 
 const AUTO_MODULE_THRESHOLD = 14;
+const MIN_ZOOM = 0.2;
+const MAX_ZOOM = 2;
+/** Pointer travel (px) before a press on the canvas becomes a pan instead of a click. */
+const DRAG_THRESHOLD = 4;
 
 export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onShowBuildings: () => void }) {
   const { label, layout, state } = useApp();
@@ -34,11 +38,25 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
   const [sel, setSel] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [mode, setMode] = useState<'rates' | 'lines'>('rates');
-  const [zoom, setZoom] = useState(1);
-  const [view, setView] = useState({ sx: 0, sy: 0, vw: 800, vh: 640 });
-  const scroller = useRef<HTMLDivElement>(null);
+  // Camera: a content point (cx, cy) shows at viewport point (cx * z + x, cy * z + y). No bounds, so the graph pans freely.
+  const [cam, setCamState] = useState({ x: 0, y: 0, z: 1 });
+  const camRef = useRef(cam);
+  const setCam = (c: { x: number; y: number; z: number }) => { camRef.current = c; setCamState(c); };
+  const zoom = cam.z;
+  const [vp, setVp] = useState({ w: 800, h: 640 });
+  const canvas = useRef<HTMLDivElement>(null);
   const pendingCenter = useRef<string | null>(null);
   const autoFitted = useRef(false);
+  const drag = useRef<{ id: number; x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
+  const [panning, setPanning] = useState(false);
+
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setVp({ w: el.clientWidth, h: el.clientHeight }));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -51,24 +69,89 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
     return () => { live = false; };
   }, [nextGraph, layout]);
 
-  // First layout: fit the width (never zoom in past 100%).
-  useEffect(() => {
-    if (!pos || autoFitted.current || !scroller.current) return;
-    autoFitted.current = true;
-    const el = scroller.current;
-    setZoom(Math.max(0.4, Math.min(1, (el.clientWidth - 16) / Math.max(1, pos.width))));
-  }, [pos]);
+  /** Fit the whole graph in the viewport, centred, with zoom limited to [lo, hi]. */
+  const fitCam = (lo: number, hi: number) => {
+    const el = canvas.current;
+    if (!el || !pos) return;
+    const w = el.clientWidth; const h = el.clientHeight;
+    const z = Math.max(lo, Math.min(hi, (w - 32) / Math.max(1, pos.width), (h - 32) / Math.max(1, pos.height)));
+    setCam({ x: (w - pos.width * z) / 2, y: (h - pos.height * z) / 2, z });
+  };
 
+  // First layout: fit the view (never zoom in past 100%, nor out past 40%).
   useEffect(() => {
+    if (!pos || autoFitted.current) return;
+    autoFitted.current = true;
+    fitCam(0.4, 1);
+  }, [pos]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Zoom to `z`, keeping whatever is under viewport point (px, py) in place. */
+  const zoomAt = (z: number, px: number, py: number) => {
+    const c = camRef.current;
+    const zz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z));
+    setCam({ x: px - ((px - c.x) / c.z) * zz, y: py - ((py - c.y) / c.z) * zz, z: zz });
+  };
+
+  // Wheel zooms around the cursor. Registered natively: React's wheel listener is passive and can't stop page scroll.
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el) return;
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault();
+      const r = el.getBoundingClientRect();
+      const dy = ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * el.clientHeight : ev.deltaY;
+      zoomAt(camRef.current.z * Math.exp(-dy * 0.0015), ev.clientX - r.left, ev.clientY - r.top);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Click and drag anywhere on the canvas (cards included) to pan; a short press still clicks.
+  const onPointerDown = (ev: ReactPointerEvent<HTMLDivElement>) => {
+    if (ev.button !== 0) return;
+    drag.current = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, cx: camRef.current.x, cy: camRef.current.y, moved: false };
+  };
+  const onPointerMove = (ev: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== ev.pointerId) return;
+    const dx = ev.clientX - d.x; const dy = ev.clientY - d.y;
+    if (!d.moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      d.moved = true;
+      ev.currentTarget.setPointerCapture(ev.pointerId);
+      setPanning(true);
+    }
+    setCam({ ...camRef.current, x: d.cx + dx, y: d.cy + dy });
+  };
+  const endDrag = (ev: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== ev.pointerId) return;
+    if (d.moved) {
+      setPanning(false);
+      // Swallow the click that follows the release so a pan never selects a card.
+      const swallow = (e: MouseEvent) => { e.stopPropagation(); e.preventDefault(); };
+      window.addEventListener('click', swallow, { capture: true, once: true });
+      setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 0);
+    }
+    drag.current = null;
+  };
+
+  /** Centre the view on content point (cx, cy). */
+  const lookAt = (cx: number, cy: number) => {
+    const el = canvas.current; const c = camRef.current;
+    if (el) setCam({ ...c, x: el.clientWidth / 2 - cx * c.z, y: el.clientHeight / 2 - cy * c.z });
+  };
+  // Centre on a box now, or once a pending layout (e.g. after expanding its module) places it.
+  const tryCenter = () => {
     const id = pendingCenter.current;
-    if (!id || !pos?.nodes[id] || !scroller.current) return;
+    const p = id ? pos?.nodes[id] : undefined;
+    if (!id || !p) return;
     pendingCenter.current = null;
     const b = graph.boxes.find((x) => x.id === id);
-    const p = pos.nodes[id]!;
-    const el = scroller.current;
-    el.scrollLeft = (p.x + (b?.w ?? 0) / 2) * zoom - el.clientWidth / 2;
-    el.scrollTop = (p.y + (b?.h ?? 0) / 2) * zoom - el.clientHeight / 2;
-  }, [pos, graph, zoom]);
+    lookAt(p.x + (b?.w ?? 0) / 2, p.y + (b?.h ?? 0) / 2);
+  };
+  const centerOn = (id: string) => { pendingCenter.current = id; tryCenter(); };
+  useEffect(tryCenter, [pos, graph]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const byId = useMemo(() => new Map(graph.boxes.map((b) => [b.id, b])), [graph]);
   const selId = sel && byId.has(sel) ? sel : null;
@@ -106,19 +189,10 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
   const collapseModule = (m: string) => { setExpanded((x) => { const y = new Set(x); y.delete(m); return y; }); setSel(`mod:${m}`); };
 
   const setZoomKeep = (z: number) => {
-    const el = scroller.current;
-    const zz = Math.max(0.3, Math.min(1.5, Math.round(z * 100) / 100));
-    if (!el) { setZoom(zz); return; }
-    const cx = (el.scrollLeft + el.clientWidth / 2) / zoom; const cy = (el.scrollTop + el.clientHeight / 2) / zoom;
-    setZoom(zz);
-    requestAnimationFrame(() => { el.scrollLeft = cx * zz - el.clientWidth / 2; el.scrollTop = cy * zz - el.clientHeight / 2; });
+    const el = canvas.current;
+    if (el) zoomAt(Math.round(z * 100) / 100, el.clientWidth / 2, el.clientHeight / 2);
   };
-  const fit = () => {
-    const el = scroller.current;
-    if (!el || !pos) return;
-    setZoomKeep(Math.min((el.clientWidth - 16) / pos.width, (el.clientHeight - 16) / pos.height));
-    requestAnimationFrame(() => { el.scrollLeft = 0; el.scrollTop = 0; });
-  };
+  const fit = () => fitCam(MIN_ZOOM, MAX_ZOOM);
 
   // Search over boxes and recipes hidden inside collapsed modules.
   const results = useMemo(() => {
@@ -131,7 +205,7 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
       const hidden = mod && !expanded.has(mod);
       out.push({
         label: b.title, where: b.kind === 'raw' ? 'raw' : b.kind === 'out' ? 'delivered' : b.kind === 'surplus' ? 'surplus' : b.kind === 'supply' ? 'your supply' : mod ? full.modules.find((m) => m.id === mod)!.label : 'recipe',
-        go: () => { setQuery(''); if (hidden) expand(mod, b.id); else { setSel(b.id); pendingCenter.current = b.id; setView((v) => ({ ...v })); } },
+        go: () => { setQuery(''); if (hidden) expand(mod, b.id); else { setSel(b.id); centerOn(b.id); } },
       });
     }
     return out.slice(0, 12);
@@ -142,13 +216,13 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
 
   if (layoutError) return <div className="panel panel-lg"><p className="note">The graph couldn’t be laid out ({layoutError}). The other tabs have the same results.</p></div>;
 
-  // ---- Edges as paths (loops: the edge runs upward).
+  // ---- Edges as paths (loops: the edge runs leftward, back against the flow).
   const W = pos?.width ?? 0; const H = pos?.height ?? 0;
   const edges = pos ? graph.edges.map((e) => {
     const pts = pos.edges[e.id]?.points ?? [];
     const on = !lit || (lit.has(e.from) && lit.has(e.to));
     const first = pts[0]; const last = pts[pts.length - 1];
-    const loop = !!first && !!last && last[1] < first[1] - 4;
+    const loop = !!first && !!last && last[0] < first[0] - 4;
     const only = e.items.length === 1 ? e.items[0]! : null;
     const toOut = e.to.startsWith('out:');
     const color = lit && on ? (loop ? '#6FC7C1' : '#F59A3E') : loop ? '#6FC7C1' : only && RESOURCE_COLOR[only.item] ? RESOURCE_COLOR[only.item]! : toOut ? '#8EC5F5' : '#8A9098';
@@ -240,11 +314,12 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
 
       <div className="row" style={{ alignItems: 'stretch', gap: 16 }}>
         <div style={{ flex: '999 1 520px', minWidth: 0, position: 'relative' }}>
-          <div ref={scroller} className="graph-canvas" onScroll={(e) => { const t = e.currentTarget; setView({ sx: t.scrollLeft, sy: t.scrollTop, vw: t.clientWidth, vh: t.clientHeight }); }}>
+          <div ref={canvas} className={`graph-canvas${panning ? ' panning' : ''}`}
+            onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}>
             {!pos && <div className="splash" style={{ minHeight: 300 }} role="status">Laying out the graph…</div>}
             {pos && (
-              <div style={{ position: 'relative', width: W * zoom, height: H * zoom }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `scale(${zoom})`, transformOrigin: '0 0' }}>
+              <>
+                <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `translate(${cam.x}px, ${cam.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
                   <svg width={W} height={H} style={{ position: 'absolute', inset: 0, overflow: 'visible' }} aria-hidden="true">
                     <defs>
                       {markerColors.map((c) => (
@@ -260,7 +335,7 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
                     ))}
                   </svg>
                   {edges.map(({ e, on, loop, last }) => last && (
-                    <div key={`l${e.id}`} className="edge-label" style={{ left: last[0] + 5, top: last[1] - 19, opacity: on ? 1 : 0.15, color: loop ? '#6FC7C1' : undefined }}>
+                    <div key={`l${e.id}`} className="edge-label" style={{ left: last[0] - 8, top: last[1] - 17, transform: 'translateX(-100%)', opacity: on ? 1 : 0.15, color: loop ? '#6FC7C1' : undefined }}>
                       {loop ? `↺ ${e.items.length === 1 ? label(e.items[0]!.item) + ' ' : ''}` : ''}{edgeText(e)}
                     </div>
                   ))}
@@ -281,30 +356,28 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
                     </div>
                   ))}
                 </div>
-              </div>
+              </>
             )}
           </div>
           {pos && (
             <div className="minimap" style={{ width: W * ms, height: H * ms }}>
               <button type="button" aria-label="Minimap: click to move the view" className="minimap-hit"
                 onClick={(ev) => {
-                  const el = scroller.current; if (!el) return;
                   const r = ev.currentTarget.getBoundingClientRect();
-                  el.scrollLeft = ((ev.clientX - r.left) / ms) * zoom - el.clientWidth / 2;
-                  el.scrollTop = ((ev.clientY - r.top) / ms) * zoom - el.clientHeight / 2;
+                  lookAt((ev.clientX - r.left) / ms, (ev.clientY - r.top) / ms);
                 }} />
               {graph.boxes.map((b) => {
                 const p = pos.nodes[b.id]; if (!p) return null;
                 const c = b.id === selId ? '#F59A3E' : { raw: '#6B4520', supply: '#3F5E45', recipe: '#5A6068', module: '#8A9098', out: '#3B6E99', surplus: '#6B5A1E' }[b.kind];
                 return <span key={b.id} aria-hidden="true" style={{ position: 'absolute', left: p.x * ms, top: p.y * ms, width: Math.max(2, b.w * ms), height: Math.max(2, b.h * ms), background: c, opacity: !lit || lit.has(b.id) ? 1 : 0.35, pointerEvents: 'none' }} />;
               })}
-              <span aria-hidden="true" className="minimap-view" style={{ left: (view.sx / zoom) * ms, top: (view.sy / zoom) * ms, width: Math.min(W * ms, (view.vw / zoom) * ms), height: Math.min(H * ms, (view.vh / zoom) * ms) }} />
+              <span aria-hidden="true" className="minimap-view" style={{ left: (-cam.x / zoom) * ms, top: (-cam.y / zoom) * ms, width: (vp.w / zoom) * ms, height: (vp.h / zoom) * ms }} />
             </div>
           )}
         </div>
 
         {selBox && <Drawer box={selBox} graph={graph} fullBoxes={full.boxes} label={label} mode={mode} edgeText={edgeText}
-          onSelect={(id) => { setSel(id); pendingCenter.current = id; setView((v) => ({ ...v })); }}
+          onSelect={(id) => { setSel(id); centerOn(id); }}
           onExpand={(m, then) => expand(m, then)} onCollapse={collapseModule} onClose={() => setSel(null)} onShowBuildings={onShowBuildings}
           moduleOf={full.moduleOf} expanded={expanded} />}
       </div>
@@ -318,7 +391,7 @@ export function FlowGraph({ result, onShowBuildings }: { result: PlanResult; onS
         <Legend bg="#2A2512" border="#6B5A1E" text="Surplus" />
         <span className="row" style={{ gap: 6 }}><svg width="26" height="8" aria-hidden="true"><path d="M1 4 H25" stroke="#A3A9B0" strokeWidth="2" strokeDasharray="2 4" /></svg>Byproduct</span>
         <span className="row" style={{ gap: 6 }}><svg width="26" height="8" aria-hidden="true"><path d="M1 4 H25" stroke="#6FC7C1" strokeWidth="2" strokeDasharray="7 4" /></svg>Loops back up the chain</span>
-        <span>Raw items keep their resource colour. Select a box to focus its chain.</span>
+        <span>Raw items keep their resource colour. Select a box to focus its chain. Drag to pan, scroll to zoom.</span>
       </div>
     </section>
   );

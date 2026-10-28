@@ -229,7 +229,8 @@ table.data tfoot td { font-weight: 600; border-bottom: 0; }
 .dot { flex: none; display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
 
 /* ---- Flow graph */
-.graph-canvas { height: min(72vh, 760px); min-height: 420px; overflow: auto; background-color: var(--canvas); background-image: radial-gradient(#262a30 1px, transparent 1px); background-size: 16px 16px; border: 1px solid var(--border); border-radius: 6px; }
+.graph-canvas { position: relative; height: min(72vh, 760px); min-height: 420px; overflow: hidden; touch-action: none; background-color: var(--canvas); background-image: radial-gradient(#262a30 1px, transparent 1px); background-size: 16px 16px; border: 1px solid var(--border); border-radius: 6px; cursor: grab; overscroll-behavior: contain; user-select: none; }
+.graph-canvas.panning, .graph-canvas.panning .gcard { cursor: grabbing; }
 .edge-label { position: absolute; padding: 0 4px; border-radius: 2px; background: var(--canvas); font: 11px/15px var(--font-mono); color: var(--default); white-space: nowrap; pointer-events: none; }
 .gcard-wrap { position: absolute; }
 .gcard { position: absolute; inset: 0; width: 100%; height: 100%; padding: 6px 10px; display: flex; flex-direction: column; justify-content: center; gap: 1px; text-align: left; border: 1px solid; border-radius: 4px; color: var(--text); font: 400 12px/16px var(--font-body); cursor: pointer; overflow: hidden; }
