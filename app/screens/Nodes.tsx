@@ -1,16 +1,32 @@
 /** Nodes: exclude nodes on a schematic map of the save's node positions, and cap raw resources. */
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as RMouseEvent, type PointerEvent as RPointerEvent } from 'react';
 import { useApp } from '../state';
 import { num } from '../ui/kit';
 import { resourceColor } from '../ui/resources';
 import type { MapNode } from '../engine/protocol';
 import outline from '../ui/map-outline.json';
+import biomeMap from '../ui/map-biomes.json';
+import seaGlowUrl from '../ui/map-sea.png';
 
 const MULT = { impure: 0.5, normal: 1, pure: 2 } as const;
 const PURITIES = ['pure', 'normal', 'impure'] as const;
 const VIEW_W = 1000;
 const MIN_ZOOM = 0.25;
+const DRAG_THRESHOLD = 4; // px a press may move and still count as a click
 const MAX_ZOOM = 4;
+// Faint screen-space grain over the map, so the dark sea glow's 8-bit steps don't show as bands.
+const GRAIN = (() => {
+  try {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    if (!g) return '';
+    const img = g.createImageData(128, 128);
+    for (let i = 0; i < img.data.length; i += 4) { img.data[i] = img.data[i + 1] = img.data[i + 2] = 255; img.data[i + 3] = Math.random() * 7; }
+    g.putImageData(img, 0, 0);
+    return `url(${c.toDataURL()})`;
+  } catch { return ''; }
+})();
 
 // Coastline, lakes and rivers, traced from the full game map by scripts/trace-map-outline.py.
 // Lines are flat [x0, y0, x1, y1, ...] in metres; nodes are in centimetres.
@@ -35,26 +51,10 @@ export function NodesScreen() {
   const zoom = cam.zoom;
   const svgRef = useRef<SVGSVGElement>(null);
   const viewport = useRef<HTMLDivElement>(null);
-  // Hold Space over the map to pan with a drag; without it a drag box-selects.
-  const [space, setSpace] = useState(false);
-  const overMap = useRef(false);
-  const pan = useRef<{ id: number; x: number; y: number; cx: number; cy: number } | null>(null);
+  // Left-drag pans the map; right-drag box-selects. A left press that doesn't move past DRAG_THRESHOLD is a click.
+  const pan = useRef<{ id: number; x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
+  const dragged = useRef(false);
   const [panning, setPanning] = useState(false);
-
-  useEffect(() => {
-    const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
-    const down = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || typing(e.target) || (!overMap.current && !pan.current)) return;
-      e.preventDefault(); // no page scroll, no pressing a focused button
-      setSpace(true);
-    };
-    const up = (e: KeyboardEvent) => { if (e.code === 'Space') setSpace(false); };
-    const blur = () => setSpace(false);
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup', up);
-    window.addEventListener('blur', blur);
-    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', blur); };
-  }, []);
 
   /** Zoom to `z` (25–400%), or by `factor`, keeping viewport point (mx, my) — the centre by default — in place. */
   const zoomTo = (z: number | ((zoom: number) => number), mx?: number, my?: number) => setCam((c) => {
@@ -106,9 +106,16 @@ export function NodesScreen() {
     const coast = path(outline.coast, true); const lakes = path(outline.lakes, true);
     // Land is coast and lake rings together, filled even-odd: lakes cut holes, and islands
     // inside lakes fill again. The sea is the map box's background.
-    return { land: coast + lakes, coast, lakes, rivers: path(outline.rivers, false) };
+    // Biomes (scripts/trace-map-biomes.py) run a little past the shore and are clipped to the land.
+    const biomes = biomeMap.biomes.map((b) => ({ name: b.name, color: b.color, d: path(b.rings, true), x: +X(b.label[0]!), y: +Y(b.label[1]!) }));
+    // Off-map areas (black on the game map, and the Grass Fields pit) are neither land nor water.
+    // The sea glow image (scripts/trace-map-outline.py) fades out over open sea, away from land and off-map black.
+    const g = outline.seaGlow;
+    const sea = { x: +X(g.x0), y: +Y(g.y0), w: +X(g.x1) - +X(g.x0), h: +Y(g.y1) - +Y(g.y0) };
+    return { land: coast + lakes, coast, lakes, rivers: path(outline.rivers, false), voids: path(outline.void, true), biomes, sea };
   }, [geo]);
   const [showOutline, setShowOutline] = useState(true);
+  const [showBiomes, setShowBiomes] = useState(false);
 
   const resources = useMemo(() => {
     const m = new Map<string, MapNode[]>();
@@ -139,26 +146,36 @@ export function NodesScreen() {
     const r = svgRef.current!.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * VIEW_W, y: ((e.clientY - r.top) / r.height) * geo.h };
   };
-  // Panning lives on the whole viewport, so Space-drag works on empty space around a zoomed-out map too.
+  // Panning lives on the whole viewport, so dragging works on empty space around a zoomed-out map too.
+  // The pointer is captured only once the press becomes a drag, so a plain click still reaches the node under it.
   const onPanDown = (e: RPointerEvent<HTMLDivElement>) => {
-    if (!space || e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    pan.current = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
-    setPanning(true);
+    if (e.button !== 0) return;
+    pan.current = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false };
   };
   const onPanMove = (e: RPointerEvent<HTMLDivElement>) => {
     const pn = pan.current;
-    if (pn && pn.id === e.pointerId) setCam((c) => ({ ...c, x: pn.cx + e.clientX - pn.x, y: pn.cy + e.clientY - pn.y }));
+    if (!pn || pn.id !== e.pointerId) return;
+    if (!(e.buttons & 1)) { pan.current = null; setPanning(false); return; } // released outside the map
+    const dx = e.clientX - pn.x; const dy = e.clientY - pn.y;
+    if (!pn.moved) {
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      pn.moved = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      setPanning(true);
+    }
+    setCam((c) => ({ ...c, x: pn.cx + dx, y: pn.cy + dy }));
   };
   const onPanUp = (e: RPointerEvent<HTMLDivElement>) => {
     if (pan.current?.id !== e.pointerId) return;
+    dragged.current = pan.current.moved;
     pan.current = null;
     setPanning(false);
   };
+  // A pan ends in a click; swallow it so it doesn't toggle a node or clear the selection.
+  const onPanClick = (e: RMouseEvent) => { if (dragged.current) { dragged.current = false; e.stopPropagation(); } };
 
   const onDown = (e: RPointerEvent<SVGSVGElement>) => {
-    if (space) return; // the viewport pans
-    if ((e.target as Element).closest('[data-node]')) return;
+    if (e.button !== 2) return;
     const p = toSvg(e);
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
     setDrag({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
@@ -169,7 +186,7 @@ export function NodesScreen() {
     const [x0, x1] = [Math.min(drag.x0, drag.x1), Math.max(drag.x0, drag.x1)];
     const [y0, y1] = [Math.min(drag.y0, drag.y1), Math.max(drag.y0, drag.y1)];
     setDrag(null);
-    if (x1 - x0 < 4 && y1 - y0 < 4) { setSelected(new Set()); return; }
+    if (x1 - x0 < DRAG_THRESHOLD && y1 - y0 < DRAG_THRESHOLD) { setSelected(new Set()); return; }
     setSelected(new Set(nodes.filter((n) => isFocused(n) && px(n) >= x0 && px(n) <= x1 && py(n) >= y0 && py(n) <= y1).map((n) => n.id)));
   };
 
@@ -187,7 +204,7 @@ export function NodesScreen() {
         <div>
           <div className="eyebrow">{plan.name}</div>
           <h1 className="h1 h1-upper">Nodes</h1>
-          <p className="lede">Every node in the save is available unless you exclude it. Click a node, or drag a box around several; hold Space and drag to move the map, and scroll to zoom. Exclusions and caps belong to this plan; solve again to use them.</p>
+          <p className="lede">Every node in the save is available unless you exclude it. Click a node, or right-drag a box around several; drag to move the map, and scroll to zoom. Exclusions and caps belong to this plan; solve again to use them.</p>
         </div>
         <div className="row" style={{ marginLeft: 'auto' }}>
           <button type="button" className="btn" disabled={!excluded.size} onClick={() => updateRequest((r) => ({ ...r, excludedNodes: [] }))}>Include all</button>
@@ -217,25 +234,44 @@ export function NodesScreen() {
             <span className="row" style={{ gap: 6 }}><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="#ECE7DE" strokeWidth="1.5" /></svg>Selected</span>
             <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>
               <button type="button" className="chip" aria-pressed={showOutline} onClick={() => setShowOutline(!showOutline)}>Coastline</button>
+              <button type="button" className="chip" aria-pressed={showBiomes} onClick={() => setShowBiomes(!showBiomes)}>Biomes</button>
               <button type="button" className="btn btn-sm" aria-label="Zoom out" disabled={zoom <= MIN_ZOOM} onClick={() => zoomTo(zoom - 0.25)}>−</button>
               <span className="mono" style={{ minWidth: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
               <button type="button" className="btn btn-sm" aria-label="Zoom in" disabled={zoom >= MAX_ZOOM} onClick={() => zoomTo(zoom + 0.25)}>+</button>
               <button type="button" className="btn btn-sm" disabled={zoom === 1 && cam.x === 0 && cam.y === 0} onClick={() => setCam({ x: 0, y: 0, zoom: 1 })}>Reset</button>
             </div>
           </div>
-          <div ref={viewportRef} className={`map-scroll${showOutline ? ' map-sea' : ''}${space ? ' map-pan' : ''}${panning ? ' panning' : ''}`} style={{ aspectRatio: `${VIEW_W} / ${geo.h}` }}
-            onPointerEnter={() => { overMap.current = true; }} onPointerLeave={() => { overMap.current = false; }}
-            onPointerDown={onPanDown} onPointerMove={onPanMove} onPointerUp={onPanUp} onPointerCancel={onPanUp}>
+          <div ref={viewportRef} className={`map-scroll${showOutline ? ' map-sea' : ''} map-pan${panning ? ' panning' : ''}`} style={{ aspectRatio: `${VIEW_W} / ${geo.h}` }}
+            onPointerDown={onPanDown} onPointerMove={onPanMove} onPointerUp={onPanUp} onPointerCancel={onPanUp}
+            onClickCapture={onPanClick} onContextMenu={(e) => e.preventDefault()}>
             <div style={{ position: 'absolute', left: 0, top: 0, width: `${zoom * 100}%`, transform: `translate(${cam.x}px, ${cam.y}px)`, transformOrigin: '0 0' }}>
-              <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${geo.h}`} className="node-map" role="img"
+              <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${geo.h}`} className="node-map" role="img" style={{ overflow: 'visible' }}
                 aria-label={`Map of ${nodes.length} resource nodes from the save. ${excluded.size} excluded.`}
-                onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+                onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+                onClick={(e) => { if (!(e.target as Element).closest('[data-node]')) setSelected(new Set()); }}>
+                {showOutline && outlinePaths && <image href={seaGlowUrl} x={outlinePaths.sea.x} y={outlinePaths.sea.y} width={outlinePaths.sea.w} height={outlinePaths.sea.h} preserveAspectRatio="none" />}
                 {showOutline && outlinePaths && (
                   <g aria-hidden="true" className="map-outline">
                     <path d={outlinePaths.land} className="map-land" />
+                  </g>
+                )}
+                {showBiomes && outlinePaths && (
+                  <g className="map-biomes" clipPath="url(#map-land-clip)">
+                    <defs><clipPath id="map-land-clip"><path d={outlinePaths.land} clipRule="evenodd" /></clipPath></defs>
+                    {outlinePaths.biomes.map((b) => <path key={b.name} d={b.d} fill={b.color}><title>{b.name}</title></path>)}
+                  </g>
+                )}
+                {showOutline && outlinePaths && (
+                  <g aria-hidden="true" className="map-outline">
+                    <path d={outlinePaths.voids} className="map-void" />
                     <path d={outlinePaths.coast} className="map-coast" />
                     <path d={outlinePaths.lakes} className="map-lake" />
                     <path d={outlinePaths.rivers} className="map-river" />
+                  </g>
+                )}
+                {showBiomes && outlinePaths && (
+                  <g aria-hidden="true" className="map-biome-labels">
+                    {outlinePaths.biomes.map((b) => <text key={b.name} transform={`translate(${b.x} ${b.y}) scale(${1 / zoom})`} textAnchor="middle" dy="0.35em">{b.name}</text>)}
                   </g>
                 )}
                 {[...nodes].sort((a, b) => Number(isFocused(a)) - Number(isFocused(b))).map((n) => {
@@ -248,7 +284,7 @@ export function NodesScreen() {
                   return (
                     // Drawn at the origin and scaled by 1/zoom, so a node keeps its on-screen size at any zoom.
                     <g key={n.id} data-node={n.id} transform={`translate(${x} ${y}) scale(${1 / zoom})`} opacity={on ? 1 : 0.18} style={{ cursor: on ? 'pointer' : 'default', pointerEvents: on ? 'auto' : 'none' }}
-                      onClick={() => { if (!space) setExcluded([n.id], !ex); }}>
+                      onClick={() => setExcluded([n.id], !ex)}>
                       <title>{`${nodeLabel(n)}${ex ? ' — excluded, click to include' : ' — click to exclude'}`}</title>
                       {n.kind === 'well-satellite'
                         ? <rect x={-r} y={-r} width={r * 2} height={r * 2} transform="rotate(45)" fill={ring ? 'none' : c} stroke={ring ? c : 'none'} strokeWidth={1.8} opacity={ex ? 0.35 : 1} />
@@ -262,6 +298,7 @@ export function NodesScreen() {
                 {drag && <rect x={Math.min(drag.x0, drag.x1)} y={Math.min(drag.y0, drag.y1)} width={Math.abs(drag.x1 - drag.x0)} height={Math.abs(drag.y1 - drag.y0)} fill="rgba(236,231,222,.06)" stroke="#ECE7DE" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />}
               </svg>
             </div>
+            {showOutline && GRAIN && <div className="map-grain" style={{ backgroundImage: GRAIN }} aria-hidden="true" />}
           </div>
           <div className="row" style={{ marginTop: 10, minHeight: 44 }}>
             {sel.length > 0 ? (
@@ -271,7 +308,7 @@ export function NodesScreen() {
                 {selExcluded > 0 && <button type="button" className="btn btn-sm" onClick={() => { setExcluded(sel, false); setSelected(new Set()); }}>Include</button>}
                 <button type="button" className="btn btn-sm" onClick={() => setSelected(new Set())}>Clear</button>
               </>
-            ) : <span className="note-faint">Positions from the save · top view · north up. Drag on empty map to select an area{focus !== 'all' ? ` of ${label(focus)} nodes` : ''}; hold Space and drag to move, scroll to zoom.</span>}
+            ) : <span className="note-faint">Positions from the save · top view · north up. Right-drag to select an area{focus !== 'all' ? ` of ${label(focus)} nodes` : ''}; drag to move, scroll to zoom.</span>}
           </div>
         </section>
 
@@ -346,3 +383,4 @@ export function NodesScreen() {
     </div>
   );
 }
+

@@ -7,3 +7,5 @@ fixtures/*
 *.sav
 .env*
 .vscode/
+scripts/map-sources/*
+!scripts/map-sources/README.md

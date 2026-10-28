@@ -167,9 +167,11 @@ code.path { display: block; padding: 8px 10px; background: var(--input); border-
 .workspace { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px; }
 .request { flex: 1 1 320px; max-width: 400px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .results { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
-/* Side by side, the request column stays in view and scrolls on its own; stacked (narrow), it scrolls with the page. */
+/* Side by side, the request column stays in view and scrolls on its own, ending level with the bottom of the
+   flow graph (--graph-bottom, set by PlanScreen) or the window, whichever comes first; stacked (narrow), it
+   scrolls with the page. */
 @media (min-width: 960px) {
-  .request { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .request { position: sticky; top: 16px; max-height: min(calc(100vh - 32px), var(--graph-bottom, 100vh)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
   .request::-webkit-scrollbar { display: none; }
 }
 .dim { opacity: .55; }
@@ -257,17 +259,25 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 /* ---- Nodes map */
 .map-scroll { position: relative; width: 100%; max-height: 72vh; overflow: hidden; background-color: var(--canvas); background-image: linear-gradient(#20242a 1px, transparent 1px), linear-gradient(90deg, #20242a 1px, transparent 1px); background-size: 10% 10%; border: 1px solid var(--border); border-radius: 4px; }
 .node-map { display: block; width: 100%; height: auto; touch-action: none; user-select: none; cursor: crosshair; }
-.map-pan, .map-pan .node-map, .map-pan .node-map g { cursor: grab !important; }
+.map-pan, .map-pan .node-map { cursor: grab; }
 .map-pan.panning, .map-pan.panning .node-map, .map-pan.panning .node-map g { cursor: grabbing !important; }
 .map-pan { touch-action: none; user-select: none; }
 .map-outline { pointer-events: none; }
 .map-outline path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
 /* With the outline on, the box is sea and land is drawn over it; the coastline replaces the grid. */
-.map-scroll.map-sea { background-color: #142833; background-image: none; }
+/* Off the map is the game map's black; the sea is a glow image in the SVG that fades out over open sea. */
+.map-scroll.map-sea { background-color: #07080a; background-image: none; }
 .map-outline .map-land { fill: var(--canvas); fill-rule: evenodd; stroke: none; }
+.map-grain { position: absolute; inset: 0; pointer-events: none; }
+.map-outline .map-void { fill: #07080a; fill-rule: evenodd; stroke: none; }
 .map-outline .map-coast { stroke: #4a5058; }
 .map-outline .map-lake { stroke: #35596b; }
 .map-outline .map-river { stroke: #35596b; }
+/* Pieces overlap their neighbours slightly so borders meet; the layer fades as a whole, so overlaps don't show. */
+.map-biomes { opacity: .24; }
+.map-biomes path { stroke: none; }
+.map-biome-labels { pointer-events: none; }
+.map-biome-labels text { font: 600 11px var(--font-body); letter-spacing: .04em; text-transform: uppercase; fill: rgba(236, 231, 222, .6); paint-order: stroke; stroke: rgba(20, 22, 26, .7); stroke-width: 3px; }
 .node-x { font: 700 12px var(--font-body); fill: #ECE7DE; stroke: #000; stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
 
 /* ---- Recipes */

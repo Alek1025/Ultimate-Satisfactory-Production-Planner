@@ -1,5 +1,5 @@
 /** Plan workspace: request editor on the left, results on the right. */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../state';
 import { Icon, Message, abbr, ago, num } from '../ui/kit';
 import { Picker, type PickerEntry } from './Picker';
@@ -20,6 +20,27 @@ export function PlanScreen() {
   const [picker, setPicker] = useState<PickerKind | null>(null);
   const [showRequest, setShowRequest] = useState(() => window.innerWidth >= 760);
   const [editingName, setEditingName] = useState<string | null>(null);
+  const [workspace, setWorkspace] = useState<HTMLDivElement | null>(null);
+
+  // The request column ends where the flow graph ends: its height is the distance from the top of
+  // the results column to the bottom of the graph (CSS still caps it at the window height).
+  useEffect(() => {
+    if (!workspace) return;
+    const fit = () => {
+      const req = workspace.querySelector<HTMLElement>('.request');
+      const res = workspace.querySelector<HTMLElement>('.results');
+      const graph = workspace.querySelector<HTMLElement>('.graph-canvas');
+      if (!req) return;
+      if (res && graph) req.style.setProperty('--graph-bottom', `${graph.getBoundingClientRect().bottom - res.getBoundingClientRect().top}px`);
+      else req.style.removeProperty('--graph-bottom');
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(workspace);
+    const mo = new MutationObserver(fit);
+    mo.observe(workspace, { childList: true, subtree: true });
+    return () => { ro.disconnect(); mo.disconnect(); };
+  }, [workspace]);
 
   const entries = useMemo(() => {
     if (!problem) return { make: [], manual: [], raw: [] };
@@ -136,7 +157,7 @@ export function PlanScreen() {
         </div>
       </div>
 
-      <div className="workspace">
+      <div ref={setWorkspace} className="workspace">
         {showRequest && (
           <aside className="request" aria-label="Request">
             <section className="panel">
