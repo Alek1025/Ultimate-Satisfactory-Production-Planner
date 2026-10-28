@@ -167,6 +167,11 @@ code.path { display: block; padding: 8px 10px; background: var(--input); border-
 .workspace { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding: 24px; }
 .request { flex: 1 1 320px; max-width: 400px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 .results { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
+/* Side by side, the request column stays in view and scrolls on its own; stacked (narrow), it scrolls with the page. */
+@media (min-width: 960px) {
+  .request { position: sticky; top: 16px; max-height: calc(100vh - 32px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .request::-webkit-scrollbar { display: none; }
+}
 .dim { opacity: .55; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
 .stat { background: var(--panel); padding: 14px 16px; }

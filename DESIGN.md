@@ -451,7 +451,7 @@ wells.
   - "Whole buildings" segmented control (Auto / Always / Off, which maps to `integerPass`).
   - Solve, the primary button.
 - **Content:** a wrapping flex row.
-  - Request panel: `flex: 1 1 320px; max-width: 380px`.
+  - Request panel: `flex: 1 1 320px; max-width: 380px`. Side by side (960px and up), it's sticky and scrolls on its own, so it stays in view while the results scroll.
   - Results: `flex: 999 1 560px`.
   - Below about 900px they stack; wide tables scroll inside their own boxes, and the graph pans inside its box.
 - **Pinned banner slot** under the top bar for app-wide conditions (no storage). It's the only place a message shows on every screen.
@@ -589,7 +589,7 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 - An "In this result" tag marks the recipes the last result used.
 - Unlocked recipes get an On/Off switch, which maps to `disabledRecipes`.
 - An unlocked alternate that can't run says why, e.g. "Needs the Refinery, which this save hasn't unlocked", using the same reason source as reachability.
-- Filters: All / Alternates / Turned off / Not unlocked, plus search. "Allow all" resets everything.
+- Filters: All / In this result / Alternates / Turned off / Not unlocked, plus search. "Allow all" resets everything.
 - Changes show "Recipe choices changed. Solve the plan again."
 
 #### 6. Plans
@@ -737,7 +737,7 @@ How the real UI in `app/` is built and what's done, on top of the parser, solver
   - Resource chips; a focused panel with purity counts, excluded counts, a cap input, and map capacity before and after exclusions; an all-resources list; an excluded list with Include; Include all; zoom 100–400%.
   - Writes `excludedNodes` and `rawCaps`.
 - **Recipes:**
-  - Scope: "This plan's items" (targets, maximize, items in the last result) or "All items". Filters: All / Alternates / Turned off / Not unlocked, plus search.
+  - Scope: "This plan's items" (targets, maximize, items in the last result) or "All items". Filters: All / In this result / Alternates / Turned off / Not unlocked, plus search.
   - Grouped by main product. Each row shows a Standard/Alternate tag, Not unlocked, and "In this result", plus per-building rates at 100% and the building-locked reason.
   - A switch writes `disabledRecipes`. Allow all resets.
 - **Plans:**

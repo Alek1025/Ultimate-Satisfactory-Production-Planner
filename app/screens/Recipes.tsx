@@ -4,7 +4,7 @@ import { useApp } from '../state';
 import { num } from '../ui/kit';
 import type { RecipeInfo } from '../engine/protocol';
 
-type Filter = 'all' | 'alt' | 'off' | 'locked';
+type Filter = 'all' | 'used' | 'alt' | 'off' | 'locked';
 
 export function RecipesScreen() {
   const { state, label, updateRequest, freshness } = useApp();
@@ -34,6 +34,7 @@ export function RecipesScreen() {
   const inScope = recipes.filter((r) => scope === 'all' || chainItems.has(mainOf(r)));
   const q = query.trim().toLowerCase();
   const matches = (r: RecipeInfo) => {
+    if (filter === 'used' && !used.has(r.id)) return false;
     if (filter === 'alt' && !r.isAlternate) return false;
     if (filter === 'off' && !disabled.has(r.id)) return false;
     if (filter === 'locked' && r.status !== 'recipe-locked') return false;
@@ -51,6 +52,7 @@ export function RecipesScreen() {
   }));
   const counts: Record<Filter, number> = {
     all: inScope.length,
+    used: inScope.filter((r) => used.has(r.id)).length,
     alt: inScope.filter((r) => r.isAlternate).length,
     off: inScope.filter((r) => disabled.has(r.id)).length,
     locked: inScope.filter((r) => r.status === 'recipe-locked').length,
@@ -84,9 +86,9 @@ export function RecipesScreen() {
           <button type="button" aria-pressed={scope === 'chain'} onClick={() => setScope('chain')}>This plan’s items</button>
           <button type="button" aria-pressed={scope === 'all'} onClick={() => setScope('all')}>All items</button>
         </div>
-        {(['all', 'alt', 'off', 'locked'] as const).map((f) => (
+        {(['all', 'used', 'alt', 'off', 'locked'] as const).map((f) => (
           <button key={f} type="button" className="chip" aria-pressed={filter === f} onClick={() => setFilter(f)}>
-            {{ all: 'All', alt: 'Alternates', off: 'Turned off', locked: 'Not unlocked' }[f]}<span className="mono note-faint">{counts[f]}</span>
+            {{ all: 'All', used: 'In this result', alt: 'Alternates', off: 'Turned off', locked: 'Not unlocked' }[f]}<span className="mono note-faint">{counts[f]}</span>
           </button>
         ))}
         <label className="row input" style={{ marginLeft: 'auto', minWidth: 240, gap: 8, flexWrap: 'nowrap' }}>
@@ -99,7 +101,7 @@ export function RecipesScreen() {
         Rates are per building at 100%.
       </p>
 
-      {sorted.length === 0 && <p className="panel muted" style={{ padding: 24, textAlign: 'center' }}>{scope === 'chain' && !chainItems.size ? 'No items yet — add a target, or show all items.' : 'Nothing matches this filter.'}</p>}
+      {sorted.length === 0 && <p className="panel muted" style={{ padding: 24, textAlign: 'center' }}>{filter === 'used' && !result ? 'No result yet — solve the plan to see which recipes it uses.' : scope === 'chain' && !chainItems.size ? 'No items yet — add a target, or show all items.' : 'Nothing matches this filter.'}</p>}
 
       {sorted.map(([item, list]) => (
         <section key={item} className="panel" style={{ padding: 0, overflow: 'hidden' }}>
