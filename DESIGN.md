@@ -370,7 +370,7 @@ replace them.
 | Main layout | Split: request editor on the left, results on the right, request panel collapsible |
 | Primary results view | Flow graph tab, shown by default; other views are tabs beside it, not separate pages |
 | Graph at scale | Modules by default (related recipes collapsed into one box); expand any module; focus a box to fade everything outside its chain; search, minimap, drag to pan, wheel to zoom |
-| Node exclusion | Schematic map from save positions (no game map image) plus a resource list |
+| Node exclusion | Schematic map from save positions over a traced coastline outline (no game map image) plus a resource list |
 | Node colour | Colour = resource; purity = size and fill; exclusion = × mark |
 | Short of target | Results pane switches mode: blockers, then a one-click smallest fix |
 | Phone | Same page, stacked; opens on results with the request panel collapsed |
@@ -567,7 +567,7 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 
 #### 4. Nodes
 - **Resource chips** (All + one per resource, with swatch and count) choose which resource is in front. The others stay on the map at about 20% opacity.
-- **Map:** schematic top view from save positions on a light grid, with no game map image.
+- **Map:** schematic top view from save positions on a light grid, over the coastline, lakes and rivers: sea and lakes are filled dark blue, land is the canvas colour, and thin lines trace the edges (a "Coastline" chip turns it all off and brings back the plain grid). No game map image is shipped; the wireframe is a simplified vector trace (`app/ui/map-outline.json`, about 5,400 points: every land/water edge at full detail, plus centre lines for channels too thin to show two banks, with thin drawn strokes across rivers (cliff edges, falls) removed so rivers stay continuous; made by `scripts/trace-map-outline.py` from a 2048px full-map image saved from Map Genie, with the northern forest taken from an in-game map screenshot because Map Genie draws that coast as solid land; neither image is committed). The two images register to within 0.2%; 93.9% of the default save's nodes fall inside traced land and the rest sit a median 11 m from a shoreline. The README credits Map Genie as the source. Its rights are handled like the node catalog: game-derived, bundled with attribution, outside the MIT license, removed if Coffee Stain Studios asks.
   - Dot colour is the resource.
   - Size and fill are purity: pure is large and solid, normal is small and solid, impure is a ring.
   - An excluded node shows a white × over a faded dot.
@@ -575,7 +575,7 @@ Two boards show it: "Plan workspace" (a 9-box iron chain, hand-placed) and "Flow
 - **Map interactions:**
   - Click a node to toggle exclusion.
   - Box or lasso select, then Exclude / Clear from a floating bar.
-  - Pan tool.
+  - Hold Space and drag to pan, with no edges to stop at (a plain drag stays box select). The wheel zooms around the cursor, 25–400%.
   - Hover title shows resource, purity and state.
 - **Side panel:**
   - The focused resource: nodes available of total, a purity table with excluded counts, a cap input, and map capacity before and after exclusions. It notes that the scarcity weight ignores exclusions.
@@ -733,8 +733,8 @@ How the real UI in `app/` is built and what's done, on top of the parser, solver
 
 - **Nodes:**
   - The map is an SVG of the save's node positions, north up. Colour shows the resource. Purity is size and fill: pure is large, normal small, impure a ring. Well satellites are diamonds. An excluded node gets a × over a faded dot.
-  - Click a node, or drag a box over empty map (it selects only the focused resource), then Exclude / Include / Clear.
-  - Resource chips; a focused panel with purity counts, excluded counts, a cap input, and map capacity before and after exclusions; an all-resources list; an excluded list with Include; Include all; zoom 100–400%.
+  - Click a node, or drag a box over empty map (it selects only the focused resource), then Exclude / Include / Clear. Holding Space over the map turns a drag into a pan (the map is a translated camera, not a scroll box) and stops node clicks; Space typed in an input is left alone.
+  - Resource chips; a focused panel with purity counts, excluded counts, a cap input, and map capacity before and after exclusions; an all-resources list; an excluded list with Include; Include all; zoom 25–400% (buttons in 25% steps around the view centre, the wheel around the cursor via a native non-passive listener), and Reset.
   - Writes `excludedNodes` and `rawCaps`.
 - **Recipes:**
   - Scope: "This plan's items" (targets, maximize, items in the last result) or "All items". Filters: All / In this result / Alternates / Turned off / Not unlocked, plus search.

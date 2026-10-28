@@ -98,6 +98,9 @@ is in [DESIGN.md](DESIGN.md).
   [ELK](https://eclipse.dev/elk/).
 - Default node data is derived from the game's map data, via
   [valentinps/satisfactorymap](https://github.com/valentinps/satisfactorymap).
+- The coastline, lake and river wireframe on the Nodes map is traced from the game's map as shown
+  on [Map Genie](https://mapgenie.io/satisfactory), with the northern forest coast from an
+  in-game map screenshot. The images aren't included; only the simplified lines are.
 
 This is an unofficial fan project, not affiliated with or endorsed by Coffee Stain Studios.
 Satisfactory and its game data are © Coffee Stain Studios.
@@ -106,6 +109,7 @@ Satisfactory and its game data are © Coffee Stain Studios.
 
 The code is licensed under the [MIT License](LICENSE).
 
-**Game data is not covered by this license.** The node catalog in `src/gamedata/data/` is game
-data © Coffee Stain Studios, included with attribution for use by this planner. It will be
+**Game data is not covered by this license.** The node catalog in `src/gamedata/data/` and the
+map wireframe in `app/ui/map-outline.json` (traced from the game's map) are derived from game
+data © Coffee Stain Studios, included with attribution for use by this planner. They will be
 removed if Coffee Stain Studios asks.

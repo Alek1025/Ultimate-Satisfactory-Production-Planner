@@ -1,13 +1,27 @@
 /** Nodes: exclude nodes on a schematic map of the save's node positions, and cap raw resources. */
-import { useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import { useApp } from '../state';
 import { num } from '../ui/kit';
 import { resourceColor } from '../ui/resources';
 import type { MapNode } from '../engine/protocol';
+import outline from '../ui/map-outline.json';
 
 const MULT = { impure: 0.5, normal: 1, pure: 2 } as const;
 const PURITIES = ['pure', 'normal', 'impure'] as const;
 const VIEW_W = 1000;
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 4;
+
+// Coastline, lakes and rivers, traced from the full game map by scripts/trace-map-outline.py.
+// Lines are flat [x0, y0, x1, y1, ...] in metres; nodes are in centimetres.
+const OUTLINE_BOUNDS = (() => {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const r of outline.coast) for (let i = 0; i < r.length; i += 2) {
+    minX = Math.min(minX, r[i]! * 100); maxX = Math.max(maxX, r[i]! * 100);
+    minY = Math.min(minY, r[i + 1]! * 100); maxY = Math.max(maxY, r[i + 1]! * 100);
+  }
+  return { minX, maxX, minY, maxY };
+})();
 
 export function NodesScreen() {
   const { state, label, updateRequest } = useApp();
@@ -16,18 +30,85 @@ export function NodesScreen() {
   const [focus, setFocus] = useState<string>('Desc_OreIron_C');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [drag, setDrag] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
-  const [zoom, setZoom] = useState(1);
+  // Camera: the map is drawn at `zoom` × the viewport width and shifted by (x, y) px. No bounds, so it pans freely.
+  const [cam, setCam] = useState({ x: 0, y: 0, zoom: 1 });
+  const zoom = cam.zoom;
   const svgRef = useRef<SVGSVGElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  // Hold Space over the map to pan with a drag; without it a drag box-selects.
+  const [space, setSpace] = useState(false);
+  const overMap = useRef(false);
+  const pan = useRef<{ id: number; x: number; y: number; cx: number; cy: number } | null>(null);
+  const [panning, setPanning] = useState(false);
+
+  useEffect(() => {
+    const typing = (t: EventTarget | null) => t instanceof HTMLElement && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName));
+    const down = (e: KeyboardEvent) => {
+      if (e.code !== 'Space' || typing(e.target) || (!overMap.current && !pan.current)) return;
+      e.preventDefault(); // no page scroll, no pressing a focused button
+      setSpace(true);
+    };
+    const up = (e: KeyboardEvent) => { if (e.code === 'Space') setSpace(false); };
+    const blur = () => setSpace(false);
+    window.addEventListener('keydown', down);
+    window.addEventListener('keyup', up);
+    window.addEventListener('blur', blur);
+    return () => { window.removeEventListener('keydown', down); window.removeEventListener('keyup', up); window.removeEventListener('blur', blur); };
+  }, []);
+
+  /** Zoom to `z` (25–400%), or by `factor`, keeping viewport point (mx, my) — the centre by default — in place. */
+  const zoomTo = (z: number | ((zoom: number) => number), mx?: number, my?: number) => setCam((c) => {
+    const el = viewport.current;
+    const zz = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, typeof z === 'function' ? z(c.zoom) : z));
+    if (!el) return { ...c, zoom: zz };
+    const ax = mx ?? el.clientWidth / 2; const ay = my ?? el.clientHeight / 2;
+    return { x: ax - ((ax - c.x) / c.zoom) * zz, y: ay - ((ay - c.y) / c.zoom) * zz, zoom: zz };
+  });
+
+  // Wheel zooms around the cursor. Registered natively: React's wheel listener is passive and can't stop page scroll.
+  // The map only mounts once a save is loaded, so this follows the element rather than running once.
+  const [viewportEl, setViewportEl] = useState<HTMLDivElement | null>(null);
+  const viewportRef = useCallback((el: HTMLDivElement | null) => { viewport.current = el; setViewportEl(el); }, []);
+  useEffect(() => {
+    const el = viewportEl;
+    if (!el) return;
+    const onWheel = (ev: WheelEvent) => {
+      ev.preventDefault();
+      const r = el.getBoundingClientRect();
+      const dy = ev.deltaMode === 1 ? ev.deltaY * 16 : ev.deltaMode === 2 ? ev.deltaY * el.clientHeight : ev.deltaY;
+      zoomTo((z) => z * Math.exp(-dy * 0.0015), ev.clientX - r.left, ev.clientY - r.top);
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [viewportEl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const nodes = problem?.mapNodes ?? [];
   const geo = useMemo(() => {
     if (!nodes.length) return null;
-    const xs = nodes.map((n) => n.x); const ys = nodes.map((n) => n.y);
+    // Frame the whole coastline too, so the outline is never cut off at 100%.
+    const xs = [...nodes.map((n) => n.x), OUTLINE_BOUNDS.minX, OUTLINE_BOUNDS.maxX];
+    const ys = [...nodes.map((n) => n.y), OUTLINE_BOUNDS.minY, OUTLINE_BOUNDS.maxY];
     const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
     const pad = 0.03 * (maxX - minX);
     const s = VIEW_W / (maxX - minX + 2 * pad);
     return { s, minX: minX - pad, minY: minY - pad, h: (maxY - minY + 2 * pad) * s };
   }, [nodes]);
+
+  const outlinePaths = useMemo(() => {
+    if (!geo) return null;
+    const X = (m: number) => ((m * 100 - geo.minX) * geo.s).toFixed(1);
+    const Y = (m: number) => ((m * 100 - geo.minY) * geo.s).toFixed(1);
+    const path = (lines: number[][], closed: boolean) => lines.map((r) => {
+      let d = `M${X(r[0]!)} ${Y(r[1]!)}`;
+      for (let i = 2; i < r.length; i += 2) d += `L${X(r[i]!)} ${Y(r[i + 1]!)}`;
+      return closed ? `${d}Z` : d;
+    }).join('');
+    const coast = path(outline.coast, true); const lakes = path(outline.lakes, true);
+    // Land is coast and lake rings together, filled even-odd: lakes cut holes, and islands
+    // inside lakes fill again. The sea is the map box's background.
+    return { land: coast + lakes, coast, lakes, rivers: path(outline.rivers, false) };
+  }, [geo]);
+  const [showOutline, setShowOutline] = useState(true);
 
   const resources = useMemo(() => {
     const m = new Map<string, MapNode[]>();
@@ -58,7 +139,25 @@ export function NodesScreen() {
     const r = svgRef.current!.getBoundingClientRect();
     return { x: ((e.clientX - r.left) / r.width) * VIEW_W, y: ((e.clientY - r.top) / r.height) * geo.h };
   };
+  // Panning lives on the whole viewport, so Space-drag works on empty space around a zoomed-out map too.
+  const onPanDown = (e: RPointerEvent<HTMLDivElement>) => {
+    if (!space || e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pan.current = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y };
+    setPanning(true);
+  };
+  const onPanMove = (e: RPointerEvent<HTMLDivElement>) => {
+    const pn = pan.current;
+    if (pn && pn.id === e.pointerId) setCam((c) => ({ ...c, x: pn.cx + e.clientX - pn.x, y: pn.cy + e.clientY - pn.y }));
+  };
+  const onPanUp = (e: RPointerEvent<HTMLDivElement>) => {
+    if (pan.current?.id !== e.pointerId) return;
+    pan.current = null;
+    setPanning(false);
+  };
+
   const onDown = (e: RPointerEvent<SVGSVGElement>) => {
+    if (space) return; // the viewport pans
     if ((e.target as Element).closest('[data-node]')) return;
     const p = toSvg(e);
     (e.currentTarget as Element).setPointerCapture(e.pointerId);
@@ -88,7 +187,7 @@ export function NodesScreen() {
         <div>
           <div className="eyebrow">{plan.name}</div>
           <h1 className="h1 h1-upper">Nodes</h1>
-          <p className="lede">Every node in the save is available unless you exclude it. Click a node, or drag a box around several. Exclusions and caps belong to this plan; solve again to use them.</p>
+          <p className="lede">Every node in the save is available unless you exclude it. Click a node, or drag a box around several; hold Space and drag to move the map, and scroll to zoom. Exclusions and caps belong to this plan; solve again to use them.</p>
         </div>
         <div className="row" style={{ marginLeft: 'auto' }}>
           <button type="button" className="btn" disabled={!excluded.size} onClick={() => updateRequest((r) => ({ ...r, excludedNodes: [] }))}>Include all</button>
@@ -117,16 +216,28 @@ export function NodesScreen() {
             <span className="row" style={{ gap: 6 }}><span aria-hidden="true" style={{ fontWeight: 700, color: 'var(--text)' }}>×</span>Excluded</span>
             <span className="row" style={{ gap: 6 }}><svg width="14" height="14" aria-hidden="true"><circle cx="7" cy="7" r="5.5" fill="none" stroke="#ECE7DE" strokeWidth="1.5" /></svg>Selected</span>
             <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>
-              <button type="button" className="btn btn-sm" aria-label="Zoom out" disabled={zoom <= 1} onClick={() => setZoom(Math.max(1, zoom - 0.5))}>−</button>
+              <button type="button" className="chip" aria-pressed={showOutline} onClick={() => setShowOutline(!showOutline)}>Coastline</button>
+              <button type="button" className="btn btn-sm" aria-label="Zoom out" disabled={zoom <= MIN_ZOOM} onClick={() => zoomTo(zoom - 0.25)}>−</button>
               <span className="mono" style={{ minWidth: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-              <button type="button" className="btn btn-sm" aria-label="Zoom in" disabled={zoom >= 4} onClick={() => setZoom(Math.min(4, zoom + 0.5))}>+</button>
+              <button type="button" className="btn btn-sm" aria-label="Zoom in" disabled={zoom >= MAX_ZOOM} onClick={() => zoomTo(zoom + 0.25)}>+</button>
+              <button type="button" className="btn btn-sm" disabled={zoom === 1 && cam.x === 0 && cam.y === 0} onClick={() => setCam({ x: 0, y: 0, zoom: 1 })}>Reset</button>
             </div>
           </div>
-          <div className="map-scroll">
-            <div style={{ position: 'relative', width: `${zoom * 100}%` }}>
+          <div ref={viewportRef} className={`map-scroll${showOutline ? ' map-sea' : ''}${space ? ' map-pan' : ''}${panning ? ' panning' : ''}`} style={{ aspectRatio: `${VIEW_W} / ${geo.h}` }}
+            onPointerEnter={() => { overMap.current = true; }} onPointerLeave={() => { overMap.current = false; }}
+            onPointerDown={onPanDown} onPointerMove={onPanMove} onPointerUp={onPanUp} onPointerCancel={onPanUp}>
+            <div style={{ position: 'absolute', left: 0, top: 0, width: `${zoom * 100}%`, transform: `translate(${cam.x}px, ${cam.y}px)`, transformOrigin: '0 0' }}>
               <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${geo.h}`} className="node-map" role="img"
                 aria-label={`Map of ${nodes.length} resource nodes from the save. ${excluded.size} excluded.`}
-                onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp}>
+                onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}>
+                {showOutline && outlinePaths && (
+                  <g aria-hidden="true" className="map-outline">
+                    <path d={outlinePaths.land} className="map-land" />
+                    <path d={outlinePaths.coast} className="map-coast" />
+                    <path d={outlinePaths.lakes} className="map-lake" />
+                    <path d={outlinePaths.rivers} className="map-river" />
+                  </g>
+                )}
                 {[...nodes].sort((a, b) => Number(isFocused(a)) - Number(isFocused(b))).map((n) => {
                   const on = isFocused(n);
                   const c = resourceColor(n.resource);
@@ -135,19 +246,20 @@ export function NodesScreen() {
                   const ring = n.purity === 'impure';
                   const x = px(n); const y = py(n);
                   return (
-                    <g key={n.id} data-node={n.id} opacity={on ? 1 : 0.18} style={{ cursor: on ? 'pointer' : 'default', pointerEvents: on ? 'auto' : 'none' }}
-                      onClick={() => setExcluded([n.id], !ex)}>
+                    // Drawn at the origin and scaled by 1/zoom, so a node keeps its on-screen size at any zoom.
+                    <g key={n.id} data-node={n.id} transform={`translate(${x} ${y}) scale(${1 / zoom})`} opacity={on ? 1 : 0.18} style={{ cursor: on ? 'pointer' : 'default', pointerEvents: on ? 'auto' : 'none' }}
+                      onClick={() => { if (!space) setExcluded([n.id], !ex); }}>
                       <title>{`${nodeLabel(n)}${ex ? ' — excluded, click to include' : ' — click to exclude'}`}</title>
                       {n.kind === 'well-satellite'
-                        ? <rect x={x - r} y={y - r} width={r * 2} height={r * 2} transform={`rotate(45 ${x} ${y})`} fill={ring ? 'none' : c} stroke={ring ? c : 'none'} strokeWidth={1.8} opacity={ex ? 0.35 : 1} />
-                        : <circle cx={x} cy={y} r={r} fill={ring ? 'none' : c} stroke={ring ? c : 'none'} strokeWidth={1.8} opacity={ex ? 0.35 : 1} />}
-                      {selected.has(n.id) && <circle cx={x} cy={y} r={r + 4} fill="none" stroke="#ECE7DE" strokeWidth={1.5} />}
-                      {ex && <text x={x} y={y + 4} textAnchor="middle" className="node-x">×</text>}
-                      <circle cx={x} cy={y} r={9} fill="transparent" />
+                        ? <rect x={-r} y={-r} width={r * 2} height={r * 2} transform="rotate(45)" fill={ring ? 'none' : c} stroke={ring ? c : 'none'} strokeWidth={1.8} opacity={ex ? 0.35 : 1} />
+                        : <circle r={r} fill={ring ? 'none' : c} stroke={ring ? c : 'none'} strokeWidth={1.8} opacity={ex ? 0.35 : 1} />}
+                      {selected.has(n.id) && <circle r={r + 4} fill="none" stroke="#ECE7DE" strokeWidth={1.5} />}
+                      {ex && <text y={4} textAnchor="middle" className="node-x">×</text>}
+                      <circle r={9} fill="transparent" />
                     </g>
                   );
                 })}
-                {drag && <rect x={Math.min(drag.x0, drag.x1)} y={Math.min(drag.y0, drag.y1)} width={Math.abs(drag.x1 - drag.x0)} height={Math.abs(drag.y1 - drag.y0)} fill="rgba(236,231,222,.06)" stroke="#ECE7DE" strokeDasharray="5 4" />}
+                {drag && <rect x={Math.min(drag.x0, drag.x1)} y={Math.min(drag.y0, drag.y1)} width={Math.abs(drag.x1 - drag.x0)} height={Math.abs(drag.y1 - drag.y0)} fill="rgba(236,231,222,.06)" stroke="#ECE7DE" strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />}
               </svg>
             </div>
           </div>
@@ -159,7 +271,7 @@ export function NodesScreen() {
                 {selExcluded > 0 && <button type="button" className="btn btn-sm" onClick={() => { setExcluded(sel, false); setSelected(new Set()); }}>Include</button>}
                 <button type="button" className="btn btn-sm" onClick={() => setSelected(new Set())}>Clear</button>
               </>
-            ) : <span className="note-faint">Positions from the save · top view · north up. Drag on empty map to select an area{focus !== 'all' ? ` of ${label(focus)} nodes` : ''}.</span>}
+            ) : <span className="note-faint">Positions from the save · top view · north up. Drag on empty map to select an area{focus !== 'all' ? ` of ${label(focus)} nodes` : ''}; hold Space and drag to move, scroll to zoom.</span>}
           </div>
         </section>
 

@@ -255,8 +255,19 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 .drawer-row:hover { background: var(--inset); }
 
 /* ---- Nodes map */
-.map-scroll { max-height: 72vh; overflow: auto; background-color: var(--canvas); background-image: linear-gradient(#20242a 1px, transparent 1px), linear-gradient(90deg, #20242a 1px, transparent 1px); background-size: 10% 10%; border: 1px solid var(--border); border-radius: 4px; }
+.map-scroll { position: relative; width: 100%; max-height: 72vh; overflow: hidden; background-color: var(--canvas); background-image: linear-gradient(#20242a 1px, transparent 1px), linear-gradient(90deg, #20242a 1px, transparent 1px); background-size: 10% 10%; border: 1px solid var(--border); border-radius: 4px; }
 .node-map { display: block; width: 100%; height: auto; touch-action: none; user-select: none; cursor: crosshair; }
+.map-pan, .map-pan .node-map, .map-pan .node-map g { cursor: grab !important; }
+.map-pan.panning, .map-pan.panning .node-map, .map-pan.panning .node-map g { cursor: grabbing !important; }
+.map-pan { touch-action: none; user-select: none; }
+.map-outline { pointer-events: none; }
+.map-outline path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+/* With the outline on, the box is sea and land is drawn over it; the coastline replaces the grid. */
+.map-scroll.map-sea { background-color: #142833; background-image: none; }
+.map-outline .map-land { fill: var(--canvas); fill-rule: evenodd; stroke: none; }
+.map-outline .map-coast { stroke: #4a5058; }
+.map-outline .map-lake { stroke: #35596b; }
+.map-outline .map-river { stroke: #35596b; }
 .node-x { font: 700 12px var(--font-body); fill: #ECE7DE; stroke: #000; stroke-width: 2.5px; paint-order: stroke; pointer-events: none; }
 
 /* ---- Recipes */
