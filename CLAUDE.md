@@ -2,8 +2,8 @@
 
 Being **rewritten from scratch** as an offline standalone desktop app: a map-scale **World
 Architect** (the player sets every goal) plus factual **Plan-vs-Actual** reports from saves.
-Target game version is Update 1.2. There is no code for the rewrite yet; the next step is
-milestone **M0**, a headless port of the v1 parsers and solver.
+Target game version is Update 1.2. Milestone **M0** is the headless core at the repository root. Run it with
+`npm run cli -- --help`.
 
 ## Read first
 
@@ -44,6 +44,4 @@ milestone **M0**, a headless port of the v1 parsers and solver.
 - Each edited `.ts`/`.tsx`/`.js`/`.mjs` file is linted right away.
 - Before a turn ends, `npm run typecheck` runs if TypeScript files have uncommitted changes.
 
-Both skip quietly until the rewrite has a root `package.json` (with a `typecheck` script) and an
-`eslint.config.js`. Once the rewrite has code, run `npm run typecheck` and `npm test` before calling
-work done.
+Run `npm run typecheck` and `npm test` before calling work done.

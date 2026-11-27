@@ -4,7 +4,7 @@ Decided 2026-11-27 after three rounds of a design council on frameworks, archite
 (notes in [`council/notes/`](council/notes/), `a1`–`a3`), plus the owner's decisions at the end of
 this file. Read [direction.md](direction.md) first for what the app is.
 
-Nothing here is built yet. When a decision changes, update this file in the same change.
+M0 implements the headless core. The desktop process layout and screens begin at M1. When a decision changes, update this file in the same change.
 
 ## Stack
 
@@ -55,6 +55,18 @@ Nothing here is built yet. When a decision changes, update this file in the same
   with 3 missed beats counts as a hang, and memory is capped. A solver crash is reported as an
   engine error, **never** as "Infeasible".
 - Lexicographic stages stream their results, so a timeout returns "Partial · stage k of n".
+- **As built in M0** (`src/solver/process/`): the host forks one Node process per running solve
+  plus the warm spare. Process creation goes through an injectable `spawn`, so M1 can pass
+  Electron's `utilityProcess` with the same messages. Inside the process, HiGHS runs on a
+  `worker_threads` thread. That keeps the main thread free to send heartbeats (with resident
+  memory) during a long synchronous solve, so a missed heartbeat means the process itself is
+  stuck. A stage that runs too long is ended by the solve timeout, which gives "Partial".
+  - Each objective level of the LP pass and of the integer pass is a stage, and so is the
+    diagnosis. The stage total grows when the integer pass or the diagnosis is scheduled.
+  - `PlanResult.status` has no error value. A rejected request is `invalid-request`. HiGHS
+    errors, WASM traps and an "infeasible" from the always-feasible LP all surface as an
+    `engine-error` event.
+  - The in-process port (tests, CLI) yields the same events but can only stop between stages.
 
 ### Key interfaces
 
@@ -65,7 +77,7 @@ Nothing here is built yet. When a decision changes, update this file in the same
 | `WorldComposer` | `compose(layers[]) → WorldState`, with an evidence tier on every field |
 | `ProjectStore` | `commit(rev, parents[])`, `ref(name)`, `journal(op)` |
 | `Compiler` | `compile(charter, network, world) → {spec, fingerprint}` |
-| `SolverPort` | `solve(spec, signal) → AsyncIterable<Stage \| Final \| EngineError>` |
+| `SolverPort` | `solve(spec, {signal, timeoutMs, labels}) → AsyncIterable<Stage \| Final \| EngineError>` |
 | `Checker` | `check(network, world) → Finding[]` |
 | `VarianceEngine` | `diff(revision, snapshot) → Variance[]` |
 | `TelemetryOverlay` | `view(session, baseSnapshot) → FieldCoverage[]` (Path 2) |
@@ -85,14 +97,23 @@ Nothing here is built yet. When a decision changes, update this file in the same
 
 | Table | Holds |
 |---|---|
+| `meta` | File format markers and creation time |
 | `blobs` | Content-addressed canonical JSON, compressed with zstd |
 | `world_snapshots` | Parent snapshot, `source_kind`, and save, Docs and catalog hashes |
-| `plan_revisions` | `parents[]` (forks; a rebase has two parents), `world_base`, `charter_blob`, `network_blob`, message |
-| `refs` | `main`, forks and `HEAD` |
-| `journal` | Pending edits. Folded into a revision on save or after 30 s idle, and replayed on startup |
+| `plan_revisions` | `world_base`, `charter_blob`, `network_blob`, message. `parents[]` (forks; a rebase has two parents) are rows in `revision_parents`, in order |
+| `refs` | `main`, forks and `HEAD` (symbolic: it names another ref) |
+| `journal` | Pending edits against a ref's head. Folded into a revision on save or after 30 s idle, and replayed on startup |
 | `solve_results` | Keyed by `spec_fingerprint` |
 | `variance_reports` | Keyed by snapshot and revision |
 
+- **Implementation (M0, `src/project`):** Node's built-in `node:sqlite` and `node:zlib` zstd, with no
+  native add-ons. The file has `application_id` "USSP" and a `user_version` schema number; a newer
+  schema is refused. Writes use WAL with `synchronous = FULL`.
+- **Crash safety:** every write is one transaction. A journal op is checked against the working state
+  before it is stored, so replay can't fail on a sound file. A fold writes the revision, moves the
+  ref and marks its journal rows `folded_into` in one transaction. Revision and snapshot ids are
+  content hashes with no timestamp, and a retried op id is a no-op. New projects and exports are
+  written to a temporary file and renamed into place.
 - **Exporting** a project uses `VACUUM INTO`, which writes a standalone copy of the file.
 - **The fingerprint covers every input:** the Docs model, catalog, world snapshot, plan revision,
   options, engine constants and solver version. It is taken when the solve is sent, and results are

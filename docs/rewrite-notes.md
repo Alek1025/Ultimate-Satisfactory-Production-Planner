@@ -10,6 +10,10 @@ found only in the Claude pass. Paths refer to the old codebase, which now lives 
 - **Three separate versions:** header **14**, save version **60**, engine **UE 5.6.1**. Verified on
   builds 495413 (`rel-main-1.2.0`) and 513885 (`rel-main-anniversary-2026`). Refuse headers below 14
   and save versions below 53; load other versions with a warning.
+  - What the refusals mean in practice (checked on 202 real saves in M0): Update 1.0 and earlier
+    saves are header **13**, and Update 1.1 saves are header 14 with save version **52**. Check the
+    save version straight after the first three ints, so an old file is reported as an unsupported
+    version rather than as corrupt.
 - **Header ending:** `saveIdentifier`, a partition flag (i32), a 20-byte `saveDataHash`, then a
   creative-mode flag (i32). The timestamp is .NET ticks: `(ticks − 621355968000000000) / 10000`,
   using BigInt.
@@ -23,8 +27,14 @@ found only in the Claude pass. Paths refer to the old codebase, which now lives 
   persistent level. That level comes last and takes the header's map name. Each level has its own
   TOC and data blob, each with an int64 length, and their object counts must match.
   - Streamed levels carry their own name, a TOC version (save version ≥ 51), collectables and
-    optional version data. The persistent level carries the destroyed-actors map.
+    optional version data. The persistent level carries the destroyed-actors map **and then one
+    more ref list** (v1 never read it; Obsidian Gears has 13 Mercer Shrine refs there). Nothing may
+    follow it.
   - Some versions store collectables or destroyed actors inside the TOC blob instead.
+  - *(M0)* Third-party save editors (files named `*_CALCULATOR.sav`) write the persistent level
+    like a streamed one: it ends with an i32 TOC version (60), the destroyed-actors map moves into
+    the TOC blob, and the count of its last (empty) ref list is left out. They also write known
+    native structs such as `LinearColor` without the native flag 0x08.
 - **Format switches by version:** save versions **41** (doubles for property vectors and quats), **49**
   (object flags in the TOC), **51** (TOC version per level) and **53** (version data per object).
   Full-type-name property tags need UE5 object version **≥ 1012** and object save version ≥ 53. TOC
@@ -47,6 +57,9 @@ found only in the Claude pass. Paths refer to the old codebase, which now lives 
 - **Robustness rule that worked:** every property and object declares its size. Anything that can't
   be decoded is kept as raw bytes, and reading resumes at the next tag or object. The tests demand
   zero failed objects; raw `UniqueNetIdRepl` is allowed.
+  - *(M0)* Each object also keeps its whole data-blob entry as bytes. Concatenating a level's
+    entries after its object count reproduces the level's data blob exactly, which is how the
+    tests prove unknown classes are kept byte-for-byte.
 
 ## 2. Where planner data lives in a save
 
