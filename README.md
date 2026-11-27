@@ -1,120 +1,29 @@
 # Ultimate Satisfactory Production Planner
 
-A production planner for Satisfactory (Update 1.2) that reads **your own save**. It knows which
-recipes, buildings and belts you've unlocked, which resource nodes your world has (including
-randomized nodes and purities), and how many Somersloops and Power Shards you hold. Then it finds
-the best factory for what you ask for.
+An offline desktop planner for Satisfactory (Update 1.2), being **rewritten from scratch**.
 
-Everything runs locally in your browser. Your save and game files are never uploaded, and the
-built app makes no network requests.
+The new app is a map-scale **World Architect**. You set the goals for each phase. It plans which
+resource nodes to use, where to refine and how to move freight and power between sites. It adds
+**Plan-vs-Actual** reports that compare each save against your plan, as facts and never as advice.
+Everything runs locally, and no game data is bundled.
 
-## What it does
+There is no code for the new version yet. Start here:
 
-- **Plan from your save:** reads the `.sav` file and the game's `Docs` file, so you can only pick
-  items, recipes and machines you actually have, and Game Mode settings (cost multipliers, node
-  randomization, purity) are taken into account.
-- **Targets and maximize:** ask for fixed rates ("20 Motors/min"), maximize items in order, or
-  both. You can also add items you already produce and cap any raw resource.
-- **Somersloops and Power Shards:** give the planner a budget and it decides where boosts and
-  overclocks pay off most.
-- **You choose the trade-offs:** reorder the priorities (meet targets, maximize, save scarce
-  resources, save power, fewer buildings). You can ask for whole buildings or allow fractions.
-- **Flow graph:** the whole factory as a graph, with related recipes grouped into modules you can
-  expand. It reads left to right, from raw resources to deliveries. Click any box to highlight its
-  supply chain; drag to pan and scroll to zoom. Includes search and a minimap.
-- **When a target can't be met:** it shows what's in the way and the smallest change that would
-  fix it, and explains why an item can't be made at all in your save.
-- **Nodes and recipes:** exclude nodes on a map of your world, cap resources, and turn off recipes
-  you don't want to use.
-- **Plans:** keep several plans, see when one is out of date (new save, new game version,
-  changed request), and export or import them as files.
-
-## Running it
-
-You need [Node.js](https://nodejs.org/) 22.12 or newer.
-
-```
-npm install
-npm run dev          # http://localhost:4173, with hot reload
-```
-
-To build and serve a production copy:
-
-```
-npm run build:app    # typecheck + build into dist-app/
-npm run preview      # serve dist-app/ at http://localhost:4173
-```
-
-Open the app through the local server, not by double-clicking the HTML file. Browsers block what
-the planner needs (WebAssembly and IndexedDB) on `file://` pages.
-
-### First run
-
-The app asks for two files:
-
-1. **Game data:** any language's Docs file (e.g. `en-US.json`) from your install folder:
-   `Satisfactory/CommunityResources/Docs/`.
-2. **Your save:** a `.sav` file. On Windows, saves are in
-   `%LOCALAPPDATA%/FactoryGame/Saved/SaveGames/<id>/`.
-
-Both are remembered in your browser along with your plans, so a reload picks up where you left
-off. Private windows may not keep them; the app warns you when that happens, and you can export
-your plans to keep them.
-
-## Status
-
-Working: first run, Setup, the plan workspace (flow graph, buildings, item flows, raw resources,
-explanation, short-of-target fixes), Nodes, Recipes and Plans.
-
-Planned: a desktop app (Tauri) that finds your install and saves automatically, keyboard support
-for the node map, and exporting the flow graph as an image.
-
-## For developers
-
-```
-npm test             # parser, solver, plan and graph tests
-npm run typecheck
-npm run summary -- fixtures/en-US.json fixtures/<save>.sav    # readable save summary
-npm run plan -- fixtures/en-US.json fixtures/<save>.sav '<request json>'
-```
-
-Some tests need game files and saves in `fixtures/`; tests whose fixtures are missing are skipped.
-See [fixtures/README.md](fixtures/README.md) for the list.
-
-```
-src/       parsers (save + game data), solver (HiGHS LP), plans and storage; no DOM code
-           outside src/platform/browser/
-app/       React + Vite UI; parsing and solving run in a Web Worker
-scripts/   command-line tools
-test/      Vitest tests
-```
-
-How everything works (save format, solver model, plan versioning, UI design and implementation)
-is in [DESIGN.md](DESIGN.md).
-
-## Credits
-
-- LP solving by [HiGHS](https://highs.dev/) (WebAssembly build), graph layout by
-  [ELK](https://eclipse.dev/elk/).
-- Default node data is derived from the game's map data, via
-  [valentinps/satisfactorymap](https://github.com/valentinps/satisfactorymap).
-- The coastline, lake and river wireframe on the Nodes map is traced from the game's own map
-  textures. The images aren't included; only the simplified lines are.
-- The biome regions on the Nodes map are traced from the
-  [Satisfactory Wiki](https://satisfactory.wiki.gg/wiki/Biomes)'s biome map (CC BY-NC-SA 4.0).
-
-This is an unofficial fan project, not affiliated with or endorsed by Coffee Stain Studios.
-Satisfactory and its game data are © Coffee Stain Studios.
+- [docs/design/direction.md](docs/design/direction.md): what the app is, and what was ruled out.
+- [docs/design/architecture.md](docs/design/architecture.md): stack, processes, data model, UI,
+  milestones M0–M3 and the owner's decisions.
+- [docs/rewrite-notes.md](docs/rewrite-notes.md): technical lessons from the first version (save
+  format, Docs parsing, solver).
+- [archive/v1/](archive/v1/): the first version, a browser app, kept for reference. See
+  [archive/README.md](archive/README.md).
 
 ## License
 
 The code is licensed under the [MIT License](LICENSE).
 
-**Game data is not covered by this license.** The node catalog in `src/gamedata/data/` and the
-map wireframe, terrain and heights in `app/ui/map-outline.json`, `app/ui/map-sea.png`,
-`app/ui/map-terrain.json` and `app/ui/map-height.png` (traced from the game's map and height map) are derived from game
-data © Coffee Stain Studios, included with attribution for use by this planner. They will be
-removed if Coffee Stain Studios asks.
-
-`app/ui/map-biomes.json` is traced from the Satisfactory Wiki's biome map and, like its source,
-is licensed [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/), not MIT.
+**Game data is not covered by this license.** The archived first version includes data derived
+from game data © Coffee Stain Studios (a node catalog and traced map, terrain and height data),
+included with attribution and removed if Coffee Stain Studios asks. Its biome layer is
+[CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). See
+[archive/v1/README.md](archive/v1/README.md#license) for the exact files. The rewrite bundles no
+game-derived data.

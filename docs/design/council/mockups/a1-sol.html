@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northern Works · Factory Atlas</title>
+<style>
+:root {
+  --paper:#f5f3ea; --panel:#fffdf6; --ink:#232a23; --soft:#5a6659; --line:#d9ddd0;
+  --leaf:#245845; --leaf-bg:#e1eee3; --rust:#963c22; --rust-bg:#f9e9df; --mint:#adf2c4;
+  --mono:Consolas, 'Courier New', monospace;
+}
+* {box-sizing:border-box}
+body {margin:0;color:var(--ink);font:15px/1.42 'Segoe UI',system-ui,sans-serif}
+h1,h2,h3,p {margin:0}
+h1 {font-size:43px;line-height:1.05;letter-spacing:-2px}
+h2 {font-size:21px;letter-spacing:-.4px}
+h3 {font-size:16px}
+a {color:inherit;text-decoration:none}
+a:focus-visible {outline:3px solid #c47343;outline-offset:4px}
+.frame {width:1440px;height:900px;display:grid;grid-template:64px 1fr / 218px 1fr;background:var(--paper);overflow:hidden}
+.top {grid-column:1/-1;background:var(--panel);display:flex;align-items:center;gap:20px;padding:0 28px;border-bottom:1px solid var(--line)}
+.brand {font-weight:800;letter-spacing:.3px}
+.mark {display:inline-grid;place-items:center;width:27px;height:27px;background:#183c32;color:var(--mint);margin-right:11px;border-radius:5px;font-size:18px}
+.top .context {border-left:1px solid var(--line);padding-left:20px;color:var(--soft)}
+.top .label {margin-left:auto}
+.label,.eyebrow,.metric-label,.table-head {font:600 11px/1.35 var(--mono);letter-spacing:1.1px;text-transform:uppercase}
+.label,.eyebrow,.metric-label,.table-head {color:var(--soft)}
+.rail {padding:28px 16px 20px;background:#ecefe3;border-right:1px solid var(--line);display:flex;flex-direction:column}
+.rail .eyebrow {padding:0 12px;margin-bottom:10px}
+.rail nav {display:grid;gap:5px}
+.rail a {display:flex;align-items:center;gap:12px;font-weight:650;padding:10px 12px;border-radius:6px}
+.rail a[aria-current] {background:#d8e6d9;color:#224c3e}
+.rail a span {font:16px var(--mono);width:18px;text-align:center}
+.rail .source {margin-top:auto;border-top:1px solid #cfd7c9;padding:15px 12px 0;font-size:13px}
+.source b {display:block;margin:5px 0 1px}
+.content {padding:29px 30px 25px;min-width:0}
+.hero {display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:23px;gap:18px}
+.hero h1 {margin:7px 0 9px}
+.subtitle {color:var(--soft);font-size:15px}
+.badge {display:inline-block;border-radius:4px;padding:5px 8px;background:var(--leaf-bg);color:var(--leaf);font-size:12px;font-weight:650;white-space:nowrap}
+.badge.warn {background:var(--rust-bg);color:var(--rust)}
+.badge.neutral {background:#edf0e9;color:#4f5c50}
+.action {background:#234d3f;color:white;border-radius:6px;padding:10px 14px;font-weight:650;white-space:nowrap}
+.card {background:var(--panel);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.card-pad {padding:19px}
+.with-map {display:grid;grid-template-columns:minmax(0,1fr) 324px;gap:16px}
+.map {position:relative;background:#132825}
+.map canvas {display:block;width:100%;height:100%}
+.big-map {height:500px}
+.small-map {height:250px}
+.map-foot {height:48px;padding:0 15px;display:flex;gap:16px;align-items:center;color:var(--soft);font-size:12px}
+.map-foot span:last-child {margin-left:auto}
+.swatch {display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;background:#3f8062}
+.swatch.plan {background:#9b6a1c}
+.map-key,.map-tag {position:absolute;font:600 11px var(--mono);letter-spacing:.7px;color:#e1f1e4;background:#19362f;border:1px solid #4a6558;border-radius:4px;padding:7px 8px}
+.map-key {left:15px;top:15px}
+.map-tag {right:15px;bottom:15px}.map-tag::after {content:"";display:inline-block;width:85px;border-top:2px solid;margin:0 0 3px 8px}
+.north {position:absolute;right:20px;top:16px;color:#d2e8d7;font:14px var(--mono);text-align:center}
+.detail h2 {margin:5px 0 4px}
+.detail dl {margin:15px 0}
+.detail dl div {display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.detail dt {color:var(--soft)}
+.detail dd {margin:0;font-weight:650;text-align:right}
+.metric {font-size:34px;font-weight:700;line-height:1.1;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.metric small {font-size:15px;letter-spacing:0;color:var(--soft)}
+.meter {height:8px;border-radius:9px;background:#e7ece2;overflow:hidden;margin:10px 0 7px}
+.meter i {display:block;height:100%;background:#3d765d}
+.note {font-size:13px;color:var(--soft)}
+.bottom-row {display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:15px}
+.kpi {padding:12px 15px}
+.kpi .metric {margin-top:4px;font-size:25px}
+.options {display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.option-heading {padding:15px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.option-heading p {margin-top:3px;font-size:13px;color:var(--soft)}
+.option-data {width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.option-data th,.option-data td {padding:8px 15px;border-top:1px solid var(--line);text-align:left}
+.option-data th {font-weight:500;color:var(--soft)}
+.option-data td {font-weight:650;text-align:right}
+.receipt {margin-top:14px;display:grid;align-items:center;gap:18px;grid-template-columns:185px 1fr 1fr;padding:14px 18px;background:#e3ede0}
+.receipt h3 {color:#224c3e}
+.receipt p {font-size:13px}
+.selectors {display:flex;gap:10px;margin-bottom:14px}
+.selectors .card {padding:9px 13px;display:flex;align-items:center;gap:10px}
+.audit {display:grid;grid-template-columns:minmax(0,1fr) 324px;gap:16px;margin-top:15px}
+.audit-intro {display:flex;justify-content:space-between;align-items:center;padding:14px 16px}
+.audit-table {width:100%;border-collapse:collapse;font-size:13px}
+.audit-table td,.audit-table th {text-align:left;padding:12px 12px;border-top:1px solid var(--line);white-space:nowrap}
+.audit-table th:first-child,.audit-table td:first-child {padding-left:16px}
+.audit-table tr.selected {background:#eef2e9}
+.audit-table td:nth-child(2),.audit-table td:nth-child(3),.audit-table td:nth-child(4) {font-variant-numeric:tabular-nums}
+.down {color:var(--rust);font-weight:700}
+.evidence h3 {margin:7px 0 6px}
+.evidence .note {margin:0 0 12px}
+.evidence hr {border:0;border-top:1px solid var(--line);margin:12px 0}
+.audit-foot {margin-top:13px;display:flex;align-items:center;justify-content:space-between}
+@media print {
+  @page {size:1440px 900px;margin:0}
+  .frame {break-after:page;print-color-adjust:exact}
+  .frame:last-child {break-after:auto}
+}
+</style>
+</head>
+<body>
+<section class="frame" id="atlas" data-screen="atlas" aria-label="Atlas screen">
+  <header class="top"></header><aside class="rail"></aside>
+  <main class="content">
+    <div class="hero">
+      <div><p class="eyebrow">Phase 02 / Caterium expansion</p><h1>Atlas</h1>
+      <p class="subtitle">Deliver 120 Caterium Ingot/min to North Hub.</p></div>
+      <a class="action" href="#options">Compare freight options →</a>
+    </div>
+    <div class="with-map">
+      <div class="card">
+        <div class="map big-map">
+          <canvas data-map="raw" aria-label="Field map showing a planned belt from Lake Quarry to North Hub"></canvas>
+          <span class="map-key">ROCKY DESERT · NORTH</span><span class="north">N<br>↑</span>
+          <span class="map-tag">250 m</span>
+        </div>
+        <div class="map-foot"><span><i class="swatch"></i>Resource node</span><span><i class="swatch plan"></i>Planned corridor</span><span>Schematic terrain · mock data</span></div>
+      </div>
+      <aside class="card card-pad detail">
+        <p class="eyebrow">Corridor · C-07</p><h2>Quarry belt</h2>
+        <p class="note">Lake Quarry → North Hub</p>
+        <dl>
+          <div><dt>Cargo</dt><dd>Caterium Ore</dd></div>
+          <div><dt>Route length</dt><dd>1.14 km</dd></div>
+          <div><dt>Equipment limit</dt><dd>Mk.4 · 480/min</dd></div>
+        </dl>
+        <p class="metric-label">Freight budget</p>
+        <div class="metric" style="margin-top:5px">400 <small>ore/min</small></div>
+        <div class="meter"><i style="width:90%"></i></div>
+        <p class="note">360 planned · 40/min free in budget</p>
+        <dl>
+          <div><dt>Extraction</dt><dd>Pure · Mk.2 · 150%</dd></div>
+          <div><dt>Refining</dt><dd>North Hub · 8 smelters</dd></div>
+          <div><dt>Hub circuit</dt><dd>West Grid</dd></div>
+        </dl>
+        <span class="badge">Checked · within limits</span>
+      </aside>
+    </div>
+    <div class="bottom-row">
+      <div class="card kpi"><p class="metric-label">Phase delivery</p><div class="metric">120 <small>ingots/min</small></div></div>
+      <div class="card kpi"><p class="metric-label">West Grid capacity</p><div class="metric">600 <small>MW · 8 coal generators</small></div></div>
+      <div class="card kpi"><p class="metric-label">West Grid planned headroom</p><div class="metric">120 <small>MW</small></div></div>
+    </div>
+  </main>
+</section>
+
+<section class="frame" id="options" data-screen="options" aria-label="Options screen">
+  <header class="top"></header><aside class="rail"></aside>
+  <main class="content">
+    <div class="hero">
+      <div><p class="eyebrow">Phase 02 / Caterium expansion</p><h1>Freight options</h1>
+      <p class="subtitle">Same source, destination and delivery target. Try moving the refinery.</p></div>
+      <span class="badge neutral">Target held · 120 ingots/min</span>
+    </div>
+    <div class="options">
+      <article class="card">
+        <div class="option-heading"><div><h2>A · Ship ore</h2><p>Refine at North Hub</p></div><span class="badge">Plan r07</span></div>
+        <div class="map small-map"><canvas data-map="raw" aria-label="Ore shipped from Lake Quarry and refined at North Hub"></canvas><span class="map-key">C-07 · ORE</span></div>
+        <table class="option-data" aria-label="Ship ore option">
+          <tr><th scope="row">Quarry belt flow</th><td>360 ore/min</td></tr>
+          <tr><th scope="row">Freight budget</th><td>400 ore/min</td></tr>
+          <tr><th scope="row">Equipment limit</th><td>Mk.4 · 480/min</td></tr>
+          <tr><th scope="row">Smelter load</th><td>32 MW at North Hub</td></tr>
+          <tr><th scope="row">Test at 150/min belt budget</th><td class="down">50 ingots/min delivered</td></tr>
+        </table>
+      </article>
+      <article class="card">
+        <div class="option-heading"><div><h2>B · Ship ingots</h2><p>Refine at Lake Quarry</p></div><span class="badge neutral">Fork of r07</span></div>
+        <div class="map small-map"><canvas data-map="refined" aria-label="Ore refined at Lake Quarry and ingots shipped to North Hub"></canvas><span class="map-key">C-07 · INGOTS</span></div>
+        <table class="option-data" aria-label="Ship ingots option">
+          <tr><th scope="row">Quarry belt flow</th><td>120 ingots/min</td></tr>
+          <tr><th scope="row">Freight budget</th><td>180 ingots/min</td></tr>
+          <tr><th scope="row">Equipment limit</th><td>Mk.3 · 270/min</td></tr>
+          <tr><th scope="row">Smelter load</th><td>32 MW at Lake Quarry</td></tr>
+          <tr><th scope="row">Test at 150/min belt budget</th><td>120 ingots/min delivered</td></tr>
+        </table>
+      </article>
+    </div>
+    <div class="card receipt">
+      <h3>What changed</h3>
+      <p><b>240 fewer items/min</b> on the same route. Both options use 360 ore/min from Lake Quarry.</p>
+      <p><b>32 MW moves to the quarry.</b> Its connection to West Grid is part of the fork.</p>
+    </div>
+    <div class="audit-foot"><p class="note">Sensitivity test holds refinery location and equipment fixed in each option.</p><a href="#variance" class="action">Open variance for r07 →</a></div>
+  </main>
+</section>
+
+<section class="frame" id="variance" data-screen="variance" aria-label="Variance screen">
+  <header class="top"></header><aside class="rail"></aside>
+  <main class="content">
+    <div class="hero">
+      <div><p class="eyebrow">Phase 02 / Caterium expansion</p><h1>Variance</h1>
+      <p class="subtitle">Compare the world at 14:17 with the targets and budgets in revision r07.</p></div>
+      <span class="badge">Same world session</span>
+    </div>
+    <div class="selectors">
+      <div class="card"><span class="metric-label">Plan</span><b>r07 · Ship ore</b></div>
+      <div class="card"><span class="metric-label">Save</span><b>Autosave · 14:17</b></div>
+      <div class="card"><span class="metric-label">Snapshot diff</span><b>14:05 → 14:17</b></div>
+    </div>
+    <div class="bottom-row">
+      <div class="card kpi"><p class="metric-label">Quarry · allocated vs configured</p><div class="metric down">−90 <small>ore/min</small></div></div>
+      <div class="card kpi"><p class="metric-label">West Grid · estimated headroom</p><div class="metric">108 <small>MW</small></div></div>
+      <div class="card kpi"><p class="metric-label">C-07 · estimated budget remaining</p><div class="metric">130 <small>ore/min</small></div></div>
+    </div>
+    <div class="audit">
+      <div class="card">
+        <div class="audit-intro"><h2>Phase measurements</h2><span class="note">Rates per minute</span></div>
+        <table class="audit-table">
+          <thead class="table-head"><tr><th scope="col">Measure</th><th scope="col">r07</th><th scope="col">14:17</th><th scope="col">Delta</th><th scope="col">Evidence</th></tr></thead>
+          <tbody>
+            <tr class="selected"><td><b>Lake Quarry · extraction config.</b></td><td>360 ore</td><td>270 ore</td><td class="down">−90</td><td><span class="badge neutral">Derived</span></td></tr>
+            <tr><td>C-07 · estimated flow / budget</td><td>400 ore</td><td>270 ore</td><td>−130</td><td><span class="badge neutral">Inferred</span></td></tr>
+            <tr><td>North Hub · measured delivery</td><td>120 ingots</td><td>—</td><td>—</td><td><span class="badge neutral">Unavailable</span></td></tr>
+            <tr><td>North Hub · idle smelters at capture</td><td>—</td><td>2 of 8</td><td>—</td><td><span class="badge">Observed</span></td></tr>
+            <tr><td>West Grid · headroom</td><td>120 MW</td><td>108 MW</td><td class="down">−12 MW</td><td><span class="badge neutral">Inferred</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <aside class="card card-pad evidence">
+        <p class="eyebrow">Evidence / Lake Quarry</p><h3>Clock setting changed</h3>
+        <p class="note">14:05 <b>150%</b> → 14:17 <b>112.5%</b><br>Observed on the same Mk.2 miner.</p>
+        <hr>
+        <h3>Configured extraction</h3>
+        <p class="note">240 ore/min at 100% on a pure node × 1.125 = 270 ore/min. Purity comes from the matched world catalog.</p>
+        <h3>Corridor flow estimate</h3>
+        <p class="note">270 ore/min assumes steady state and a clear belt. Actual throughput is unavailable in this snapshot.</p>
+        <h3>West Grid headroom</h3>
+        <p class="note">600 MW nameplate minus 492 MW estimated demand. Coal and water supply are assumed available.</p>
+      </aside>
+    </div>
+    <div class="audit-foot"><p class="note">Idle state is the state at capture. Runtime over the interval is unavailable.</p><a href="#atlas" class="action">Return to Atlas ↑</a></div>
+  </main>
+</section>
+<script>
+const screens = [['atlas','⌖','Atlas'],['options','⇄','Options'],['variance','≡','Variance']];
+for (const frame of document.querySelectorAll('.frame')) {
+  frame.querySelector('.top').innerHTML = '<span class="brand"><span class="mark">⌁</span>Factory Atlas</span><span class="context">Northern Works / Plan r07</span><span class="label">Mockup — Sol R1</span>';
+  const navigation = screens.map(([id, icon, name]) => {
+    const current = id === frame.dataset.screen ? ' aria-current="page"' : '';
+    return '<a href="#' + id + '"' + current + '><span aria-hidden="true">' + icon + '</span>' + name + '</a>';
+  }).join('');
+  frame.querySelector('.rail').innerHTML = '<p class="eyebrow">Workspace</p><nav aria-label="Workspace">' + navigation +
+    '</nav><div class="source"><p class="eyebrow" style="padding:0;margin:0">World source</p><b>Rocky Desert save</b><span class="note">Update 1.2 · local project</span></div>';
+}
+
+function mapLabel(ctx, x, y, title, sub, color) {
+  ctx.font = 'bold 15px Segoe UI, sans-serif';
+  const titleWidth = ctx.measureText(title).width;
+  ctx.font = '12px Consolas, monospace';
+  const width = Math.max(titleWidth, ctx.measureText(sub).width) + 22;
+  ctx.fillStyle = '#142e28';
+  ctx.strokeStyle = '#587467';
+  ctx.lineWidth = 1;
+  ctx.fillRect(x,y,width,46);
+  ctx.strokeRect(x,y,width,46);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 15px Segoe UI, sans-serif';
+  ctx.fillText(title,x+11,y+18);
+  ctx.fillStyle = '#c6dccd';
+  ctx.font = '12px Consolas, monospace';
+  ctx.fillText(sub,x+11,y+35);
+}
+
+for (const canvas of document.querySelectorAll('canvas')) {
+  const {width, height} = canvas.getBoundingClientRect();
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * ratio);
+  canvas.height = Math.round(height * ratio);
+  const ctx = canvas.getContext('2d');
+  const refined = canvas.dataset.map === 'refined';
+  const tall = height > 300;
+  const w = 820, h = tall ? 500 : 382;
+  ctx.scale(canvas.width / w, canvas.height / h);
+  ctx.fillStyle = '#142b2a';
+  ctx.fillRect(0,0,w,h);
+  const land = new Path2D('M152 -40 C189 31 150 69 210 103 C272 136 197 193 232 237 C278 300 197 317 253 381 C312 441 261 495 281 550 L900 550 L900 -40 Z');
+  const ramp = ctx.createLinearGradient(120,480,830,0);
+  ramp.addColorStop(0,'#2b4840');
+  ramp.addColorStop(.53,'#465843');
+  ramp.addColorStop(1,'#273e35');
+  ctx.fillStyle = ramp;
+  ctx.fill(land);
+  ctx.strokeStyle = '#6d8c79';
+  ctx.lineWidth = 2;
+  ctx.stroke(land);
+  ctx.save();
+  ctx.clip(land);
+  for (let ring=1;ring<24;ring++) {
+    ctx.beginPath();
+    for (let step=0;step<=120;step++) {
+      const a = step * Math.PI / 60;
+      const r = ring*17*(1+.13*Math.sin(3*a+.18*ring)+.08*Math.cos(5*a));
+      const x = 615 + r*Math.cos(a)*1.31;
+      const y = 146 + r*Math.sin(a)*.82;
+      if (step === 0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = ring%5 === 0 ? '#a2ab8677' : '#9ca98a40';
+    ctx.lineWidth = ring%5 === 0 ? 1.3 : .8;
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = '#c1dac013';
+  ctx.lineWidth = 1;
+  for (let x=0;x<w;x+=48) {ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for (let y=0;y<h;y+=48) {ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  ctx.fillStyle = '#b7d4c391';
+  ctx.font = '11px Consolas, monospace';
+  ctx.fillText('W E S T   C O A S T',45,h*.77);
+  ctx.fillText('C O A L   R I D G E',585,95);
+  for (const [x,y] of [[356,116],[467,98],[620,115],[720,150],[275,210],[367,305],[709,313],[550,330],[460,368],[690,435]]) {
+    ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle = '#a6ccb1';ctx.fill();
+  }
+  const src = [327,h*.63], dest = [654,h*.43];
+  const route = new Path2D('M'+src.join(' ')+' L414 '+(h*.65)+' L548 '+(h*.42)+' L'+dest.join(' '));
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = '#102720';ctx.lineWidth = 10;ctx.stroke(route);
+  ctx.strokeStyle = refined ? '#aaf2c1' : '#f7c475';ctx.lineWidth = 4;ctx.stroke(route);
+  ctx.strokeStyle = '#c4e2d785';ctx.lineWidth = 1.4;ctx.setLineDash([4,5]);
+  ctx.beginPath();ctx.moveTo(...dest);ctx.lineTo(563,h*.29);ctx.lineTo(...(refined ? src : [467,h*.34]));ctx.stroke();
+  ctx.setLineDash([]);
+  for (const [x,y] of [src,dest]) {
+    ctx.fillStyle = '#193b31';ctx.strokeStyle = refined ? '#aaf2c1' : '#f7c475';
+    ctx.lineWidth = 2.5;ctx.fillRect(x-7,y-7,14,14);ctx.strokeRect(x-7,y-7,14,14);
+  }
+  mapLabel(ctx,src[0]-58,src[1]+16,'Lake Quarry',refined ? 'MINE + 8 SMELTERS' : 'PURE CATERIUM','#ecf7ec');
+  mapLabel(ctx,dest[0]-32,dest[1]+16,'North Hub',refined ? 'RECEIVING SITE' : '8 SMELTERS','#ecf7ec');
+  if (tall) mapLabel(ctx,438,76,'West Grid','600 MW · COAL','#c0eacf');
+}
+</script>
+</body>
+</html>

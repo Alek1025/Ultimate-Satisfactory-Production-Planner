@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1480">
+<title>World Architect R2</title>
+<style>
+/* ---------- theme tokens ---------- */
+.dark{
+  --bg:#0b1622; --panel:#101e2d; --panel2:#142538; --line:#24405c; --grid:#16293d;
+  --ink:#dbe7f3; --ink2:#9fb4c9; --ink3:#6f879f; --accent:#5cc8ff; --accent2:#2f8fc9;
+  --ok:#5fd6a0; --warn:#f2c14e; --red:#ff6b5e; --land:#13283b; --water:#0a1420; --contour:#1d3a55;
+  --chip:#18304a;
+}
+.light{
+  --bg:#f6f3ec; --panel:#fffdf8; --panel2:#f1ede3; --line:#d9d1c1; --grid:#ebe5d8;
+  --ink:#1f2a33; --ink2:#4d5b66; --ink3:#7d8a93; --accent:#1f6fa8; --accent2:#5e9ccc;
+  --ok:#2e8b5e; --warn:#a8740c; --red:#c2412f; --land:#ece6d6; --water:#dfe8ea; --contour:#d6cdb8;
+  --chip:#ece6d8;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#2a2a2a;font:14px/1.5 "Segoe UI",system-ui,sans-serif;padding:28px 0;color:#ddd}
+.label{width:1440px;margin:0 auto 10px;font:600 13px/1 "Segoe UI",sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#bbb}
+.frame{width:1440px;height:900px;margin:0 auto 48px;background:var(--bg);color:var(--ink);display:grid;
+  grid-template-columns:64px 1fr;grid-template-rows:52px 1fr;overflow:hidden;position:relative;border-radius:6px;
+  box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.mono{font-family:"Cascadia Mono",Consolas,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+/* title bar */
+.top{grid-column:1/3;display:flex;align-items:center;gap:20px;padding:0 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.top .proj{font-weight:600;font-size:15px}
+.top .crumb{color:var(--ink3);font-size:13px}
+.top .sp{flex:1}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:var(--chip);font-size:13px;color:var(--ink2)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--ink);padding:6px 14px;border-radius:6px;font:inherit;font-size:13px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+.mockup-tag{position:absolute;right:14px;bottom:10px;font-size:12px;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;z-index:5}
+/* rail */
+.rail{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;align-items:center;padding-top:14px;gap:6px}
+.rail a{width:48px;padding:8px 0 6px;border-radius:8px;text-align:center;font-size:11px;color:var(--ink3);text-decoration:none;display:block}
+.rail a b{display:block;font-size:18px;line-height:1.1;margin-bottom:2px;font-weight:400}
+.rail a.on{background:var(--chip);color:var(--accent)}
+/* body */
+.main{position:relative;overflow:hidden}
+h2{font-size:20px;font-weight:600;margin:0}
+h3{font-size:13px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink3);margin:0 0 10px}
+.sub{color:var(--ink2);font-size:14px}
+.ev{font-size:11.5px;font-weight:600;letter-spacing:.05em;padding:1px 7px;border-radius:4px;border:1px solid;text-transform:uppercase;white-space:nowrap}
+.ev.o{color:var(--ok);border-color:var(--ok)} .ev.d{color:var(--accent);border-color:var(--accent)}
+.ev.i{color:var(--warn);border-color:var(--warn)} .ev.u{color:var(--ink3);border-color:var(--ink3);border-style:dashed}
+/* ---------- Atlas ---------- */
+.atlas .map{position:absolute;inset:0 420px 92px 0}
+.atlas .map svg{width:100%;height:100%;display:block}
+.inspector{position:absolute;top:0;right:0;bottom:0;width:420px;border-left:1px solid var(--line);background:var(--panel);padding:24px 28px;overflow:hidden}
+.kv{display:grid;grid-template-columns:1fr auto;row-gap:8px;font-size:14px;margin:0 0 18px}
+.kv span:nth-child(odd){color:var(--ink2)}
+.sec{border-top:1px solid var(--line);padding-top:18px;margin-top:18px}
+.dial{position:relative;height:66px;margin:6px 0 8px}
+.track{position:absolute;left:0;right:0;top:26px;height:10px;border-radius:5px;background:var(--panel2);border:1px solid var(--line)}
+.fill{position:absolute;left:0;top:26px;height:10px;border-radius:5px;background:linear-gradient(90deg,var(--accent2),var(--accent))}
+.detent{position:absolute;top:18px;width:2px;height:26px;background:var(--ink3)}
+.detent i{position:absolute;top:30px;left:-24px;width:50px;text-align:center;font:12px/1 Consolas,monospace;font-style:normal;color:var(--ink3)}
+.knob{position:absolute;top:19px;width:24px;height:24px;margin-left:-12px;border-radius:50%;background:var(--ink);border:3px solid var(--accent);box-shadow:0 0 0 6px rgba(92,200,255,.15)}
+.scrub{position:absolute;left:0;right:420px;bottom:0;height:92px;border-top:1px solid var(--line);background:var(--panel);padding:14px 24px;display:flex;gap:24px;align-items:center}
+.phases{flex:1;display:flex;gap:4px;position:relative}
+.ph{flex:1;border:1px solid var(--line);border-radius:6px;padding:8px 12px;font-size:13px;color:var(--ink2);background:var(--panel2)}
+.ph b{display:block;color:var(--ink);font-size:14px;font-weight:600}
+.ph.on{border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
+.layers{position:absolute;left:20px;top:20px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;width:236px;font-size:13px}
+.layers label{display:flex;justify-content:space-between;align-items:center;padding:4px 0;color:var(--ink2)}
+.sens{position:absolute;left:20px;bottom:112px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;width:330px;font-size:13px}
+.bar{height:8px;border-radius:4px;background:var(--panel2);position:relative;overflow:hidden;margin-top:4px}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent)}
+/* ---------- Options ---------- */
+.opt{padding:28px 36px;display:grid;grid-template-columns:1fr 1fr 400px;gap:24px;height:100%}
+.fork{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px 24px;display:flex;flex-direction:column}
+.fork.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fork .tag{font:600 12px/1 "Segoe UI";letter-spacing:.08em;color:var(--ink3);text-transform:uppercase}
+.fork h4{font-size:18px;margin:6px 0 4px;font-weight:600}
+.mini{height:200px;border-radius:8px;background:var(--water);margin:16px 0;border:1px solid var(--line);overflow:hidden}
+.mini svg{width:100%;height:100%}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{padding:7px 0;border-bottom:1px solid var(--grid);text-align:left}
+th{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+td.r,th.r{text-align:right}
+.receipt{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:24px 26px;position:relative;
+  background-image:repeating-linear-gradient(0deg,transparent 0 27px,var(--grid) 27px 28px)}
+.receipt:after{content:"";position:absolute;left:0;right:0;bottom:-8px;height:8px;
+  background:radial-gradient(circle at 6px 0,transparent 6px,var(--panel) 6.5px) 0 0/12px 8px repeat-x}
+.rline{display:grid;grid-template-columns:1fr 84px 84px;font-size:14px;padding:5px 0;align-items:baseline}
+.rline .a,.rline .b{text-align:right}
+.rline.h{font-size:12px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase}
+.better{color:var(--ok);font-weight:600}
+.worse{color:var(--red)}
+.note{font-size:13px;color:var(--ink2);border-left:3px solid var(--line);padding-left:12px;margin-top:14px}
+/* ---------- Redline ---------- */
+.strip{position:absolute;left:0;right:0;top:0;height:96px;border-bottom:1px solid var(--line);background:var(--panel);padding:14px 28px}
+.saves{display:flex;gap:6px;align-items:flex-end;margin-top:6px}
+.sv{width:44px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);position:relative}
+.sv.on{border-color:var(--red);background:rgba(255,107,94,.18)}
+.sv.base{border-color:var(--accent)}
+.sv small{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:11px;color:var(--ink3)}
+.rl-map{position:absolute;left:0;top:96px;bottom:0;right:460px}
+.rl-map svg{width:100%;height:100%}
+.vlist{position:absolute;right:0;top:96px;bottom:0;width:460px;border-left:1px solid var(--line);background:var(--panel);padding:22px 26px;overflow:hidden}
+.vitem{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:10px;font-size:14px}
+.vitem.on{border-color:var(--red);background:rgba(255,107,94,.06)}
+.vitem .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.delta{font-weight:600;color:var(--red)}
+.drawer{border-top:1px solid var(--line);margin-top:14px;padding-top:14px}
+.chain{font-size:13px;color:var(--ink2);display:grid;grid-template-columns:auto 1fr auto;gap:6px 12px;align-items:center}
+.chain .k{color:var(--ink3)}
+</style>
+</head>
+<body>
+
+<!-- =================================================================== -->
+<div class="label">Frame 1 — Atlas · dark blueprint theme · corridor selected</div>
+<section class="frame dark atlas">
+  <header class="top">
+    <span class="proj">Second Playthrough</span><span class="crumb">plan rev r41 · fork <b style="color:var(--ink2)">main</b></span>
+    <span class="pill"><span class="dot" style="background:var(--ok)"></span>World: autosave_2 · 14:02 · Observed</span>
+    <span class="sp"></span>
+    <span class="pill mono">Docs 1.2 · a3f9…c1</span>
+    <button class="btn">Check plan</button>
+    <button class="btn pri">Draft allocation</button>
+  </header>
+  <nav class="rail">
+    <a class="on" href="#"><b>◎</b>Atlas</a><a href="#"><b>☰</b>Charter</a><a href="#"><b>⇄</b>Options</a>
+    <a href="#"><b>✎</b>Redline</a><a href="#"><b>◫</b>World</a>
+  </nav>
+  <div class="main">
+    <div class="map">
+      <svg viewBox="0 0 956 708" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="g1" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="var(--grid)" stroke-width="1"/></pattern>
+        </defs>
+        <rect width="956" height="708" fill="var(--water)"/>
+        <path d="M120 70 C260 30 420 60 560 40 C700 25 820 90 880 180 C930 270 900 380 860 470 C820 570 720 650 580 670 C440 690 320 660 210 610 C110 560 60 460 70 350 C80 240 60 120 120 70Z" fill="var(--land)" stroke="var(--line)" stroke-width="1.5"/>
+        <rect width="956" height="708" fill="url(#g1)" opacity=".7"/>
+        <g fill="none" stroke="var(--contour)" stroke-width="1">
+          <path d="M200 160 C300 120 420 150 470 220 C520 300 440 360 340 350 C240 340 170 260 200 160Z"/>
+          <path d="M240 190 C310 165 390 185 420 230 C450 290 390 320 330 315 C260 305 220 250 240 190Z"/>
+          <path d="M600 380 C690 350 780 400 790 470 C800 540 720 580 640 560 C570 540 540 420 600 380Z"/>
+          <path d="M630 410 C690 395 745 425 750 470 C752 515 700 535 650 520 C610 505 590 440 630 410Z"/>
+          <path d="M520 120 C600 100 700 130 740 200"/><path d="M150 450 C220 420 300 470 330 540"/>
+        </g>
+        <!-- nodes -->
+        <g>
+          <g fill="#c9d6e3"><circle cx="300" cy="230" r="4"/><circle cx="322" cy="248" r="4"/><circle cx="286" cy="262" r="4"/><circle cx="340" cy="222" r="4"/></g>
+          <g fill="#e39b5a"><circle cx="690" cy="460" r="4"/><circle cx="712" cy="478" r="4"/><circle cx="668" cy="488" r="4"/></g>
+          <g fill="#9ad17a"><circle cx="200" cy="500" r="4"/><circle cx="222" cy="520" r="4"/></g>
+          <g fill="none" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="3 2"><circle cx="780" cy="190" r="6"/><circle cx="800" cy="210" r="6"/></g>
+        </g>
+        <!-- corridors: width = budget -->
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M330 240 C420 290 470 360 520 400" stroke="var(--accent)" stroke-width="13" opacity=".9"/>
+          <path d="M330 240 C420 290 470 360 520 400" stroke="var(--bg)" stroke-width="2" stroke-dasharray="1 9"/>
+          <path d="M690 475 C640 450 590 420 545 410" stroke="var(--accent2)" stroke-width="8"/>
+          <path d="M210 510 C320 490 430 450 515 418" stroke="var(--accent2)" stroke-width="5"/>
+          <path d="M790 200 C720 280 620 360 548 398" stroke="#7fb5d9" stroke-width="6" stroke-dasharray="10 6"/>
+          <path d="M540 420 C560 520 600 590 640 620" stroke="var(--accent2)" stroke-width="7"/>
+        </g>
+        <!-- sites (black boxes) -->
+        <g font-family="Segoe UI" font-size="14">
+          <rect x="500" y="384" width="56" height="44" rx="4" fill="var(--panel2)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="528" y="411" text-anchor="middle" fill="var(--ink)" font-weight="600">S3</text>
+          <text x="566" y="380" fill="var(--ink)" font-weight="600">Crater Works</text><text x="566" y="397" fill="var(--ink3)" font-size="13">black box · 6 in / 3 out</text>
+          <rect x="624" y="612" width="40" height="32" rx="4" fill="var(--panel2)" stroke="var(--line)" stroke-width="2"/>
+          <text x="644" y="633" text-anchor="middle" fill="var(--ink2)">S5</text>
+          <text x="676" y="634" fill="var(--ink2)">Coast Power · 3 GW fuel</text>
+          <text x="250" y="210" fill="var(--ink2)">Iron cluster · 4 nodes</text>
+          <text x="740" y="170" fill="var(--warn)">2 nodes · Inferred purity</text>
+        </g>
+        <!-- corridor label -->
+        <g font-family="Consolas" font-size="13">
+          <rect x="398" y="270" width="118" height="24" rx="4" fill="var(--bg)" stroke="var(--accent)"/>
+          <text x="408" y="287" fill="var(--accent)">C-07 · 720/min</text>
+        </g>
+      </svg>
+      <div class="layers">
+        <h3>World layers</h3>
+        <label>Manual (3 edits) <span class="ev d" style="color:var(--ink2);border-color:var(--ink3)">on</span></label>
+        <label>Observed · autosave_2 <span class="ev o">on</span></label>
+        <label>Inferred (2 nodes) <span class="ev i">on</span></label>
+        <label>Catalog default <span class="ev u">base</span></label>
+      </div>
+      <div class="sens">
+        <h3>Sensitivity · C-07 budget</h3>
+        <div style="display:flex;justify-content:space-between"><span>Phase 4 · Heavy Frame target</span><span class="mono">binds at 690</span></div>
+        <div class="bar"><i style="width:88%"></i></div>
+        <div style="display:flex;justify-content:space-between;margin-top:10px"><span>Steel Beam surplus</span><span class="mono">−0.42 / unit</span></div>
+        <div class="bar"><i style="width:42%;background:var(--warn)"></i></div>
+      </div>
+    </div>
+
+    <aside class="inspector">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <h2>C-07 Iron Ore trunk</h2><span class="ev d">Derived</span>
+      </div>
+      <p class="sub" style="margin:4px 0 18px">Iron cluster → S3 Crater Works · 1.9 km · 4 waypoints</p>
+      <h3>Throughput budget</h3>
+      <div style="display:flex;align-items:baseline;gap:10px"><span class="mono" style="font-size:30px;font-weight:600">720</span><span class="sub">items/min · your budget</span></div>
+      <div class="dial">
+        <div class="track"></div><div class="fill" style="width:61%"></div>
+        <div class="detent" style="left:5%"><i>60</i></div><div class="detent" style="left:10%"><i>120</i></div>
+        <div class="detent" style="left:22%"><i>270</i></div><div class="detent" style="left:40%"><i>480</i></div>
+        <div class="detent" style="left:65%"><i>780</i></div><div class="detent" style="left:100%"><i>1200</i></div>
+        <div class="knob" style="left:61%"></div>
+      </div>
+      <p class="sub" style="margin:22px 0 0;font-size:13px">Detents are belt Mk1–Mk6 hard caps. 720 fits one Mk5 belt with 60/min headroom.</p>
+      <div class="sec">
+        <h3>Lift profile</h3>
+        <svg viewBox="0 0 364 74" width="364" height="74">
+          <path d="M0 60 L60 52 L120 40 L180 22 L240 30 L300 44 L364 48 L364 74 L0 74Z" fill="var(--panel2)"/>
+          <path d="M0 60 L60 52 L120 40 L180 22 L240 30 L300 44 L364 48" fill="none" stroke="var(--accent)" stroke-width="2"/>
+          <g fill="var(--ink)"><circle cx="0" cy="60" r="3"/><circle cx="120" cy="40" r="3"/><circle cx="240" cy="30" r="3"/><circle cx="364" cy="48" r="3"/></g>
+          <text x="186" y="16" fill="var(--ink2)" font-size="12" font-family="Consolas">+38 m</text>
+        </svg>
+        <div class="kv" style="margin-top:8px">
+          <span>Max rise (heightmap, 4 samples)</span><span class="mono">38 m <span class="ev d">Derived</span></span>
+          <span>Waypoint 3 height</span><span class="mono">412 m <span class="ev" style="color:var(--ink2);border-color:var(--ink2)">Manual layer</span></span>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>Check · phase 4</h3>
+        <div class="kv">
+          <span>Solver needs on C-07</span><span class="mono">690 /min</span>
+          <span>Belt cap at budget</span><span class="mono" style="color:var(--ok)">780 ✓</span>
+          <span>Source nodes (4 × pure, Mk3)</span><span class="mono">960 /min</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:6px"><button class="btn">Pin budget</button><button class="btn">Split corridor</button></div>
+    </aside>
+
+    <div class="scrub">
+      <div style="width:120px"><h3 style="margin:0">Phase</h3><span class="sub">scrub to view</span></div>
+      <div class="phases">
+        <div class="ph"><b>P1 · Steel</b>Space Elevator 2 · done</div>
+        <div class="ph"><b>P2 · Oil</b>480 Plastic, 300 Rubber</div>
+        <div class="ph on"><b>P3 · Frames</b>12 Heavy Frame/min</div>
+        <div class="ph"><b>P4 · Nuclear</b>15 GW from fuel rods</div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-tag">Mockup — Opus R2</div>
+</section>
+
+<!-- =================================================================== -->
+<div class="label">Frame 2 — Options · light topographic theme · two forks + tradeoff receipt</div>
+<section class="frame light">
+  <header class="top">
+    <span class="proj">Second Playthrough</span><span class="crumb">Options · P3 Frames · Aluminum question</span>
+    <span class="sp"></span>
+    <span class="pill">Same World snapshot · same targets · 2 candidates</span>
+    <button class="btn">Add fork</button>
+  </header>
+  <nav class="rail">
+    <a href="#"><b>◎</b>Atlas</a><a href="#"><b>☰</b>Charter</a><a class="on" href="#"><b>⇄</b>Options</a>
+    <a href="#"><b>✎</b>Redline</a><a href="#"><b>◫</b>World</a>
+  </nav>
+  <div class="main">
+    <div class="opt">
+      <div class="fork sel">
+        <span class="tag">Fork A · main · r41</span>
+        <h4>Refine at the dunes</h4>
+        <p class="sub" style="margin:0">Alumina made beside the bauxite nodes; ingots shipped.</p>
+        <div class="mini"><svg viewBox="0 0 400 200">
+          <path d="M20 30 C120 10 260 20 380 50 L370 180 L30 185Z" fill="var(--land)"/>
+          <g fill="none" stroke="var(--contour)"><path d="M60 80 C140 50 220 90 260 140"/><path d="M90 110 C150 90 200 120 220 150"/></g>
+          <rect x="70" y="120" width="34" height="28" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/>
+          <rect x="290" y="60" width="34" height="28" rx="3" fill="var(--panel)" stroke="var(--ink3)" stroke-width="2"/>
+          <path d="M104 132 C180 120 240 90 290 76" stroke="var(--accent)" stroke-width="5" fill="none"/>
+          <text x="150" y="104" font-size="13" fill="var(--ink2)">C-11 · 240/min ingots</text>
+          <g fill="#c58b5a"><circle cx="60" cy="160" r="4"/><circle cx="80" cy="168" r="4"/><circle cx="50" cy="140" r="4"/></g>
+        </svg></div>
+        <table>
+          <tr><th>Fact</th><th class="r">Value</th></tr>
+          <tr><td>Bauxite nodes used</td><td class="r num">3 of 3 nearby</td></tr>
+          <tr><td>Water at site</td><td class="r num">1,080 m³/min (9 extractors)</td></tr>
+          <tr><td>Corridors added</td><td class="r num">1 belt · 0 pipes</td></tr>
+          <tr><td>Power at dunes</td><td class="r num">612 MW · new grid tie</td></tr>
+        </table>
+        <p class="note">Checker: feasible for P3 and P4. All 14 targets met.</p>
+      </div>
+
+      <div class="fork">
+        <span class="tag">Fork B · ship-raw · r41 + 6 edits</span>
+        <h4>Ship raw to Crater Works</h4>
+        <p class="sub" style="margin:0">Bauxite and water handled at the existing S3 site.</p>
+        <div class="mini"><svg viewBox="0 0 400 200">
+          <path d="M20 30 C120 10 260 20 380 50 L370 180 L30 185Z" fill="var(--land)"/>
+          <g fill="none" stroke="var(--contour)"><path d="M60 80 C140 50 220 90 260 140"/><path d="M90 110 C150 90 200 120 220 150"/></g>
+          <rect x="290" y="60" width="34" height="28" rx="3" fill="var(--panel)" stroke="var(--accent)" stroke-width="2"/>
+          <path d="M66 156 C160 140 240 100 290 80" stroke="var(--accent)" stroke-width="9" fill="none"/>
+          <path d="M66 170 C170 160 250 120 292 86" stroke="#5aa0c8" stroke-width="5" fill="none" stroke-dasharray="8 5"/>
+          <text x="140" y="174" font-size="13" fill="var(--ink2)">C-11 · 600 ore + C-12 pipe</text>
+          <g fill="#c58b5a"><circle cx="60" cy="160" r="4"/><circle cx="80" cy="168" r="4"/><circle cx="50" cy="140" r="4"/></g>
+        </svg></div>
+        <table>
+          <tr><th>Fact</th><th class="r">Value</th></tr>
+          <tr><td>Bauxite nodes used</td><td class="r num">3 of 3 nearby</td></tr>
+          <tr><td>Water at S3</td><td class="r num">1,080 m³/min · from lake</td></tr>
+          <tr><td>Corridors added</td><td class="r num">1 belt · 1 pipe (+64 m lift)</td></tr>
+          <tr><td>Power at dunes</td><td class="r num">72 MW · miners only</td></tr>
+        </table>
+        <p class="note">Checker: feasible for P3. P4 Nuclear target short 2.1 GW at S3 (fuel corridor C-02 at its cap).</p>
+      </div>
+
+      <div class="receipt">
+        <h3 style="margin-bottom:4px">Tradeoff receipt</h3>
+        <p class="sub" style="margin:0 0 14px;font-size:13px">What each fork costs, measured against the same goals. No ranking; your objective order decides.</p>
+        <div class="rline h"><span>Line item</span><span class="a">A</span><span class="b">B</span></div>
+        <div class="rline"><span>Targets met (P3 / P4)</span><span class="a num">14 / 9</span><span class="b num">14 / 8</span></div>
+        <div class="rline"><span>Belt-min on corridors</span><span class="a num better">240</span><span class="b num">600</span></div>
+        <div class="rline"><span>Pipe headlift</span><span class="a num better">0 m</span><span class="b num">64 m</span></div>
+        <div class="rline"><span>Pumps needed</span><span class="a num better">0</span><span class="b num">Mk2 + Mk1</span></div>
+        <div class="rline"><span>New sites</span><span class="a num">1</span><span class="b num better">0</span></div>
+        <div class="rline"><span>Grid ties</span><span class="a num">1</span><span class="b num better">0</span></div>
+        <div class="rline"><span>Power draw total</span><span class="a num">4.31 GW</span><span class="b num better">4.18 GW</span></div>
+        <div class="rline"><span>Scarce nodes held</span><span class="a num">0 extra</span><span class="b num">0 extra</span></div>
+        <div class="rline"><span>C-02 fuel budget used</span><span class="a num">88%</span><span class="b num worse">100% · binds</span></div>
+        <div style="border-top:1px dashed var(--line);margin:12px 0 10px"></div>
+        <div class="rline"><span><b>Objective 1 · meet P4</b></span><span class="a num better">met</span><span class="b num worse">−2.1 GW</span></div>
+        <div class="rline"><span>Objective 2 · fewest corridors</span><span class="a num">1</span><span class="b num">2</span></div>
+        <p class="note" style="margin-top:16px">Both forks use the 14:02 snapshot and Docs a3f9…c1. Fingerprints <span class="mono">7c2e…</span> / <span class="mono">91ad…</span>.</p>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn pri">Keep A as main</button><button class="btn">Edit B</button><button class="btn">Diff</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mockup-tag">Mockup — Opus R2</div>
+</section>
+
+<!-- =================================================================== -->
+<div class="label">Frame 3 — Redline · dark theme · plan r41 vs save of 26 Nov 21:40</div>
+<section class="frame dark">
+  <header class="top">
+    <span class="proj">Second Playthrough</span><span class="crumb">Redline · plan r41 vs <b style="color:var(--ink2)">autosave_0 · 21:40</b></span>
+    <span class="sp"></span>
+    <span class="pill"><span class="dot" style="background:var(--red)"></span>3 variances · 1 unavailable</span>
+    <span class="pill"><span class="dot" style="background:var(--ink3)"></span>Live FRM off</span>
+  </header>
+  <nav class="rail">
+    <a href="#"><b>◎</b>Atlas</a><a href="#"><b>☰</b>Charter</a><a href="#"><b>⇄</b>Options</a>
+    <a class="on" href="#"><b>✎</b>Redline</a><a href="#"><b>◫</b>World</a>
+  </nav>
+  <div class="main">
+    <div class="strip">
+      <div style="display:flex;justify-content:space-between"><h3 style="margin:0">Survey strip · saves since plan r41</h3><span class="sub" style="font-size:13px">bar height = variances found</span></div>
+      <div class="saves">
+        <div class="sv base" style="height:12px"><small>r41</small></div>
+        <div class="sv" style="height:14px"><small>18:20</small></div>
+        <div class="sv" style="height:20px"><small>19:05</small></div>
+        <div class="sv" style="height:18px"><small>19:50</small></div>
+        <div class="sv" style="height:28px"><small>20:35</small></div>
+        <div class="sv" style="height:34px"><small>21:10</small></div>
+        <div class="sv on" style="height:40px"><small>21:40</small></div>
+      </div>
+    </div>
+    <div class="rl-map">
+      <svg viewBox="0 0 916 804" preserveAspectRatio="xMidYMid slice">
+        <defs><pattern id="g3" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="var(--grid)"/></pattern></defs>
+        <rect width="916" height="804" fill="var(--water)"/>
+        <path d="M90 80 C260 40 520 60 760 100 C860 180 880 420 820 600 C760 740 500 780 300 740 C140 700 60 560 60 380 C60 240 50 130 90 80Z" fill="var(--land)" stroke="var(--line)"/>
+        <rect width="916" height="804" fill="url(#g3)" opacity=".7"/>
+        <!-- as designed (plan) -->
+        <g fill="none" stroke-linecap="round">
+          <path d="M260 260 C360 330 430 400 480 450" stroke="var(--accent)" stroke-width="12" opacity=".35"/>
+          <path d="M680 520 C620 490 560 470 505 460" stroke="var(--accent)" stroke-width="8" opacity=".35"/>
+          <path d="M200 580 C300 540 400 500 480 470" stroke="var(--accent)" stroke-width="5" opacity=".35"/>
+        </g>
+        <!-- as built -->
+        <g fill="none" stroke-linecap="round">
+          <path d="M260 260 C360 330 430 400 480 450" stroke="var(--ink)" stroke-width="7"/>
+          <path d="M680 520 C620 490 560 470 505 460" stroke="var(--ink)" stroke-width="8"/>
+          <path d="M200 580 C260 556 300 540 330 528" stroke="var(--ink)" stroke-width="5" stroke-dasharray="2 0"/>
+        </g>
+        <rect x="462" y="432" width="56" height="44" rx="4" fill="var(--panel2)" stroke="var(--ink)" stroke-width="2"/>
+        <text x="490" y="459" text-anchor="middle" fill="var(--ink)" font-family="Segoe UI" font-size="14" font-weight="600">S3</text>
+        <!-- redline clouds -->
+        <g fill="none" stroke="var(--red)" stroke-width="2.5">
+          <path d="M330 300 q14 -18 30 -6 q12 -20 30 -4 q20 -10 26 10 q20 6 10 26 q14 16 -6 28 q2 22 -22 18 q-10 20 -30 6 q-20 10 -26 -10 q-22 -2 -12 -24 q-16 -16 4 -28 q-4 -18 -4 -16Z"/>
+          <path d="M330 510 q12 -16 28 -6 q14 -16 28 -2 q20 -4 20 16 q16 14 0 28 q4 20 -18 20 q-12 16 -30 4 q-20 6 -22 -14 q-18 -10 -4 -26 q-8 -16 -2 -20Z"/>
+        </g>
+        <g fill="none" stroke="var(--ink3)" stroke-width="2" stroke-dasharray="5 4">
+          <path d="M720 180 q16 -14 32 -2 q18 -6 20 14 q16 14 0 28 q-4 18 -24 14 q-16 12 -30 -2 q-18 -4 -10 -22 q-6 -18 12 -30Z"/>
+        </g>
+        <g font-family="Segoe UI" font-size="14">
+          <circle cx="425" cy="300" r="13" fill="var(--red)"/><text x="425" y="305" text-anchor="middle" fill="var(--bg)" font-weight="700">1</text>
+          <circle cx="410" cy="510" r="13" fill="var(--red)"/><text x="410" y="515" text-anchor="middle" fill="var(--bg)" font-weight="700">2</text>
+          <circle cx="780" cy="180" r="13" fill="var(--ink3)"/><text x="780" y="185" text-anchor="middle" fill="var(--bg)" font-weight="700">?</text>
+          <text x="200" y="250" fill="var(--ink2)">Iron cluster</text>
+          <text x="640" y="556" fill="var(--ink2)">Dune alumina site</text>
+          <text x="690" y="250" fill="var(--ink3)">Oil wells · not in save</text>
+        </g>
+        <g font-family="Segoe UI" font-size="13" fill="var(--ink2)">
+          <rect x="24" y="724" width="330" height="56" rx="6" fill="var(--panel)" stroke="var(--line)"/>
+          <line x1="40" y1="744" x2="76" y2="744" stroke="var(--accent)" stroke-width="8" opacity=".35"/><text x="86" y="748">as designed (r41)</text>
+          <line x1="200" y1="744" x2="236" y2="744" stroke="var(--ink)" stroke-width="5"/><text x="246" y="748">as built</text>
+          <path d="M40 766 q6 -6 12 0 q6 -6 12 0 q6 -6 12 0" fill="none" stroke="var(--red)" stroke-width="2"/><text x="86" y="770">variance</text>
+        </g>
+      </svg>
+    </div>
+    <aside class="vlist">
+      <h3>Variances · factual only</h3>
+      <div class="vitem on">
+        <div class="row"><b>1 · C-07 Iron Ore trunk</b><span class="ev o">Observed</span></div>
+        <div class="row" style="margin-top:6px"><span class="sub">Plan 720/min · built</span><span class="mono delta">480/min · −240</span></div>
+        <div class="sub" style="font-size:13px">Built as Mk4 belt (cap 480). Plan budget 720.</div>
+      </div>
+      <div class="vitem">
+        <div class="row"><b>2 · C-14 Limestone feed</b><span class="ev o">Observed</span></div>
+        <div class="row" style="margin-top:6px"><span class="sub">Plan 2.1 km · built</span><span class="mono delta">0.9 km · ends at WP2</span></div>
+      </div>
+      <div class="vitem">
+        <div class="row"><b>3 · S3 output Steel Beam</b><span class="ev d">Derived</span></div>
+        <div class="row" style="margin-top:6px"><span class="sub">Plan 180/min · computed</span><span class="mono delta">142/min · −38</span></div>
+      </div>
+      <div class="vitem" style="border-style:dashed">
+        <div class="row"><b>? · Oil well pressurizer</b><span class="ev u">Unavailable</span></div>
+        <div class="sub" style="font-size:13px">Well-core links are not in the save and no catalog pack is loaded. Not compared.</div>
+      </div>
+      <div class="drawer">
+        <h3>Evidence · item 1, built 480/min</h3>
+        <div class="chain">
+          <span class="ev o">Obs</span><span>Conveyor chain 41 segments, class <span class="mono">Build_ConveyorBeltMk4_C</span></span><span class="mono">autosave_0</span>
+          <span class="ev o">Obs</span><span>Endpoints at Miner #N620 → S3 storage input</span><span class="mono">21:40</span>
+          <span class="ev d">Der</span><span>Cap = min(segment caps) = 480/min</span><span class="mono">Docs a3f9</span>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn">Amend plan to 480</button><button class="btn">Keep plan at 720</button><button class="btn">Show on map</button>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <div class="mockup-tag">Mockup — Opus R2</div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,399 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockup — Sol R2</title>
+<style>
+:root { color-scheme: light; font: 14px/1.42 "Segoe UI", system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #424f4e; }
+a { color: inherit; }
+button, input { font: inherit; }
+button, .button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); text-decoration: none; }
+.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 650; }
+.frame { --bg:#f5f5ef; --paper:#fffefa; --side:#e9ede3; --ink:#1d312c; --muted:#52665e; --line:#d8dfd3; --accent:#206450; --on-accent:#fff; --wash:#e6efe4; --warn:#873e1f; --warn-bg:#f8e9db; width:1440px; height:900px; margin:0 auto 20px; display:grid; grid-template-columns:196px 1fr; background:var(--bg); color:var(--ink); }
+.dark { color-scheme:dark; --bg:#0f202b; --paper:#172b38; --side:#132430; --ink:#ebf5f4; --muted:#a9c1ca; --line:#304957; --accent:#8bddcf; --on-accent:#132d2c; --wash:#203e46; --warn:#ffcf9b; --warn-bg:#423327; }
+.rail { border-right:1px solid var(--line); background:var(--side); display:flex; flex-direction:column; padding:26px 18px 20px; }
+.identity { display:flex; gap:10px; align-items:center; padding:0 6px; line-height:1.18; font-weight:650; }
+.emblem { flex:none; width:34px; height:34px; border-radius:8px; display:grid; place-items:center; background:var(--accent); color:var(--on-accent); font-size:21px; }
+.project { margin:37px 6px 18px; }
+.project strong,.project small { display:block; }
+small,.small { font-size:13px; }
+.muted,small { color:var(--muted); }
+nav { display:grid; gap:5px; }
+nav a,nav span { text-decoration:none; padding:10px 11px; border-radius:6px; color:var(--muted); }
+nav a[aria-current] { background:var(--wash); color:var(--accent); font-weight:700; box-shadow:inset 3px 0 var(--accent); }
+.rail footer { margin-top:auto; border-top:1px solid var(--line); padding:14px 5px 0; }
+.main { min-width:0; padding:27px 30px 24px; }
+.page-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+h1,h2,h3,p { margin:0; }
+h1 { font-size:37px; line-height:1.15; letter-spacing:-.045em; margin-top:4px; }
+h2 { font-size:19px; line-height:1.25; letter-spacing:-.015em; }
+h3 { font-size:15px; }
+.row { display:flex; align-items:center; gap:9px; }
+.between { justify-content:space-between; }
+.meta { font-size:13px; letter-spacing:.055em; color:var(--muted); }
+.panel { background:var(--paper); border:1px solid var(--line); border-radius:9px; min-width:0; }
+.padded { padding:16px 18px; }
+.tag { display:inline-block; padding:3px 8px; border-radius:5px; background:var(--wash); color:var(--accent); font-size:13px; font-weight:650; white-space:nowrap; }
+.alert { background:var(--warn-bg); color:var(--warn); }
+.charter-grid { display:grid; grid-template-columns: minmax(0,1fr) 294px; gap:16px; }
+.panel-head { padding:15px 17px; border-bottom:1px solid var(--line); }
+table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+td,th { text-align:left; vertical-align:middle; }
+.ledger th,.ledger td { padding:8px 14px; border-bottom:1px solid var(--line); }
+.ledger thead th { background:var(--bg); white-space:nowrap; }
+.ledger tbody th { font-weight:600; }
+.ledger .focus { background:var(--wash); }
+.ledger small { display:block; }
+.ledger td.empty { color:var(--muted); }
+.ledger-summary { padding:12px 15px; }
+.sidebar { display:grid; align-content:start; gap:14px; }
+.rules { list-style:none; margin:10px 0 0; padding:0; }
+.rules li { padding:9px 0; border-top:1px solid var(--line); }
+.rules li:first-child { border-top:0; }
+.rules small { display:block; }
+.objectives { margin:9px 0 0; padding-left:24px; }
+.objectives li { padding:3px 0 3px 4px; }
+.candidate { margin-top:15px; }
+.candidate-body { display:grid; grid-template-columns:1.05fr 1fr 1.15fr; gap:18px; margin-top:13px; }
+.candidate-body > div+div { border-left:1px solid var(--line); padding-left:18px; }
+.world-grid { display:grid; grid-template-columns:1fr 1.04fr; gap:16px; }
+.layer { display:grid; grid-template-columns:26px 1fr auto; gap:12px; align-items:start; margin:0 16px; padding:13px 2px; border-bottom:1px solid var(--line); }
+.layer:last-of-type { border-bottom:0; }
+.layer p,.asset p { margin-top:4px; }
+.layer-dot { display:grid; place-items:center; width:23px; height:23px; border-radius:50%; background:var(--wash); color:var(--accent); font-weight:650; }
+.world-grid .panel+.panel { margin-top:15px; }
+.asset { margin:0 16px; padding:12px 2px; border-bottom:1px solid var(--line); }
+.asset:last-child { border-bottom:0; }
+.changes { margin-top:11px; }
+.changes th,.changes td { padding:8px 7px; border-bottom:1px solid var(--line); }
+.changes tr:last-child td { border-bottom:0; }
+code { font:13px/1.4 Consolas, monospace; overflow-wrap:anywhere; }
+.unknown .asset { padding-top:10px; padding-bottom:10px; }
+.phases { display:flex; gap:5px; }
+.phases a { padding:7px 11px; border-radius:5px; text-decoration:none; }
+.phases .current { background:var(--wash); color:var(--accent); font-weight:700; }
+.atlas-grid { display:grid; grid-template-columns:900px 268px; gap:16px; }
+.map { position:relative; width:900px; height:668px; overflow:hidden; border:1px solid var(--line); border-radius:9px; background:#122d3c; }
+.map canvas { width:900px; height:668px; display:block; }
+.map-overlay { position:absolute; inset:0; pointer-events:none; }
+.site-label { position:absolute; padding:5px 8px; border:1px solid #5b7981; border-radius:5px; background:#132a36; color:#f5faf5; line-height:1.29; white-space:nowrap; box-shadow:0 2px 7px #0a19287c; }
+.site-label small { display:block; color:#c1d2d3; }
+.site-label.active { background:#2b4a4e; border-color:#a8eadc; }
+.map-key { position:absolute; display:flex; gap:17px; bottom:15px; left:15px; padding:8px 11px; background:#112935; color:#edf4f4; border:1px solid #3c5960; border-radius:6px; font-size:13px; }
+.map-key i { display:inline-block; width:15px; height:3px; vertical-align:middle; margin-right:5px; background:#e5b883; }
+.map-key .pipe { background:#a8eadc; }
+.map-key .power { background:#ebd64c; }
+.map-layer { position:absolute; top:13px; left:13px; padding:7px 10px; background:#122b39; border:1px solid #507077; border-radius:5px; color:#e9f3f2; }
+.atlas-side { height:668px; display:flex; flex-direction:column; }
+.atlas-side section { padding:14px 15px; border-bottom:1px solid var(--line); }
+.atlas-side section:last-child { border-bottom:0; }
+.metric { font-size:30px; letter-spacing:-.045em; font-weight:700; line-height:1.17; margin-top:8px; font-variant-numeric:tabular-nums; }
+.meter { height:7px; border-radius:4px; overflow:hidden; background:var(--line); margin:9px 0 12px; }
+.meter span { display:block; width:90%; height:100%; background:var(--accent); }
+.detents { display:flex; align-items:center; justify-content:space-between; margin:10px 0 6px; }
+.detents .tag { border:1px solid var(--accent); }
+.budget { display:flex; align-items:center; gap:7px; margin-top:8px; }
+.budget input { width:76px; min-height:34px; border:1px solid var(--line); border-radius:5px; padding:5px 8px; background:var(--bg); color:var(--ink); }
+.profile { width:236px; height:64px; display:block; margin-top:6px; }
+.atlas-foot { margin-top:12px; display:flex; justify-content:space-between; }
+</style>
+</head>
+<body>
+<section class="frame" id="charter" aria-labelledby="charter-title">
+  <aside class="rail" data-section="Charter"></aside>
+  <main class="main">
+    <header class="page-head">
+      <div><div class="meta">Shoreline grid / Main plan</div><h1 id="charter-title">Charter</h1></div>
+      <div class="row"><span class="muted">Revision 12 · Saved locally</span><button type="button" class="primary">Solve selected phase</button></div>
+    </header>
+    <div class="charter-grid">
+      <section class="panel" aria-labelledby="goals-title">
+        <div class="panel-head row between"><h2 id="goals-title">Goals by phase</h2><div class="row"><button type="button">+ Goal</button><button type="button">+ Phase</button></div></div>
+        <table class="ledger" aria-label="Player targets across four phases">
+          <thead><tr><th scope="col">Minimum target</th><th scope="col"><small>Phase 1</small>Extract</th><th scope="col"><small>Phase 2</small>Steel</th><th scope="col" class="focus"><small>Phase 3 · Selected</small>Oil &amp; grid</th><th scope="col"><small>Phase 4</small>Assembly</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Iron plates <small>Dune Works · items/min</small></th><td>60</td><td>120</td><td class="focus">120</td><td>180</td></tr>
+            <tr><th scope="row">Steel beams <small>Canyon Forge · items/min</small></th><td class="empty">—</td><td>45</td><td class="focus">60</td><td>90</td></tr>
+            <tr><th scope="row">Steel pipes <small>Canyon Forge · items/min</small></th><td class="empty">—</td><td>60</td><td class="focus">90</td><td>120</td></tr>
+            <tr><th scope="row">Rubber <small>Spire Refinery · items/min</small></th><td class="empty">—</td><td class="empty">—</td><td class="focus">120</td><td>160</td></tr>
+            <tr><th scope="row">Plastic <small>Spire Refinery · items/min</small></th><td class="empty">—</td><td class="empty">—</td><td class="focus">80</td><td>120</td></tr>
+            <tr><th scope="row">Fuel delivery <small>Cliff Power · m³/min</small></th><td class="empty">—</td><td class="empty">—</td><td class="focus">60</td><td>120</td></tr>
+            <tr><th scope="row">Grid reserve <small>East Grid · MW</small></th><td>100</td><td>200</td><td class="focus">250</td><td>400</td></tr>
+            <tr><th scope="row">Modular engines <small>Crater Assembly · items/min</small></th><td class="empty">—</td><td class="empty">—</td><td class="focus empty">—</td><td>5</td></tr>
+          </tbody>
+        </table>
+        <div class="ledger-summary row between"><span class="muted">— No target in this phase</span><span class="tag">7 targets in Oil &amp; grid</span></div>
+      </section>
+      <aside class="sidebar">
+        <section class="panel padded">
+          <div class="row between"><h2>Pins &amp; exclusions</h2><button type="button">Edit</button></div>
+          <ul class="rules">
+            <li><strong>Pin · Cliff Power</strong><small>Fuel generation starts here in Oil &amp; grid.</small></li>
+            <li><strong>Pin · Canyon Forge</strong><small>Keep steel refining here from Steel onward.</small></li>
+            <li><strong>Exclude · Marsh quartz</strong><small>Reserve both nodes across all phases.</small></li>
+          </ul>
+        </section>
+        <section class="panel padded">
+          <div class="row between"><h2>Objective order</h2><button type="button">Reorder</button></div>
+          <ol class="objectives">
+            <li>Minimize target shortfall</li>
+            <li>Minimize scarce node use</li>
+            <li>Minimize operating MW</li>
+            <li>Minimize machine count</li>
+          </ol>
+          <p class="small muted" style="margin-top:8px">Oil &amp; grid · Lexicographic priorities</p>
+        </section>
+      </aside>
+    </div>
+    <section class="panel padded candidate" aria-labelledby="candidate-title">
+      <div class="row between"><h2 id="candidate-title">Candidate B · Changes since revision 12</h2><span class="tag alert">Whole-building check · Blocked</span></div>
+      <div class="candidate-body">
+        <div><h3>+20 plastic/min</h3><p class="muted">60 → 80 at Spire Refinery</p></div>
+        <div><h3>+2 refineries</h3><p class="muted">After whole-building assignment</p></div>
+        <div><h3>Coast Trunk exceeds its budget by 10 m³/min</h3><p class="muted">310 required · 300 budget</p></div>
+      </div>
+    </section>
+  </main>
+</section>
+
+<section class="frame dark" id="world" aria-labelledby="world-title">
+  <aside class="rail" data-section="World & Library"></aside>
+  <main class="main">
+    <header class="page-head">
+      <div><div class="meta">Shoreline grid / Main plan</div><h1 id="world-title">World &amp; Library</h1></div>
+      <div class="row"><button type="button">Fork snapshot</button><button type="button" class="primary">Import source</button></div>
+    </header>
+    <div class="world-grid">
+      <div>
+        <section class="panel" aria-labelledby="layer-title">
+          <div class="panel-head row between"><div><h2 id="layer-title">World state layers</h2><small>Snapshot 18 · Highest priority first</small></div><span class="tag">Project baseline</span></div>
+          <div class="layer"><span class="layer-dot">M</span><div><h3>Manual · Ridge survey</h3><p class="muted">2 node edits and 1 pipe survey. Console players can enter coordinates, purity and well links.</p></div><button type="button">Edit entries</button></div>
+          <div class="layer"><span class="layer-dot">O</span><div><h3>Observed · Shoreline_018.sav</h3><p class="muted">13:56 local · Explicit save properties and placed objects</p></div><button type="button">Inspect</button></div>
+          <div class="layer"><span class="layer-dot">I</span><div><h3>Inferred · Site associations</h3><p class="muted">4 extractors assigned by position. Review confidence per match.</p></div><button type="button">Inspect</button></div>
+          <div class="layer"><span class="layer-dot">D</span><div><h3>Default · Standard nodes</h3><p class="muted">Local build 513885 · 459 resource nodes · 118 well satellites</p></div><button type="button">Preset</button></div>
+        </section>
+        <section class="panel padded" aria-labelledby="rebase-title">
+          <div class="row between"><div><h2 id="rebase-title">Review rebase to snapshot 19</h2><small>Shoreline_019.sav · 14:22 local</small></div><button type="button">Review 3 changes</button></div>
+          <table class="changes" aria-label="Pending rebase changes">
+            <thead><tr><th>Field</th><th>Incoming</th><th>Disposition</th></tr></thead>
+            <tbody>
+              <tr><td>Coast Oil / N-208</td><td>Normal → Pure</td><td><span class="tag alert">Manual conflict</span></td></tr>
+              <tr><td>East Grid</td><td>+1 fuel generator</td><td>Observed</td></tr>
+              <tr><td>Canyon Forge</td><td>+1 Mk.4 belt</td><td>Observed</td></tr>
+            </tbody>
+          </table>
+        </section>
+      </div>
+      <div>
+        <section class="panel" aria-labelledby="library-title">
+          <div class="panel-head row between"><h2 id="library-title">Local library</h2><span class="tag">Build 513885</span></div>
+          <div class="asset row between"><div><h3>Items, recipes &amp; unlocks</h3><p class="muted"><code>en-US.json</code> · Model hash <code>73ab…908c</code></p></div><button type="button">Change Docs</button></div>
+          <div class="asset row between"><div><h3>Node catalog &amp; wells</h3><p class="muted">Local export · Catalog hash <code>c128…a7d1</code></p></div><button type="button">Import catalog</button></div>
+          <div class="asset row between"><div><h3>Terrain &amp; heights</h3><p class="muted">Local tile cache · 25 m contours · Elevation reference verified</p></div><button type="button">Import terrain</button></div>
+          <div class="asset row between"><div><h3>Console survey</h3><p class="muted">Start from an imported preset or enter surveyed nodes and sites.</p></div><button type="button">Start survey</button></div>
+        </section>
+        <section class="panel unknown" aria-labelledby="unknown-title">
+          <div class="panel-head row between"><h2 id="unknown-title">Unknown classes</h2><span class="tag alert">3 objects</span></div>
+          <div class="asset"><div class="row between"><code>Build_ModularPumpXL_C</code><span class="small muted">2 objects</span></div><p class="muted">Positions observed · Headlift unavailable</p></div>
+          <div class="asset"><div class="row between"><code>Desc_GlassFiber_C</code><span class="small muted">1 object</span></div><p class="muted">Class preserved · Item rate unavailable</p></div>
+        </section>
+        <section class="panel padded row between" aria-label="Live telemetry source"><div><h3>Live telemetry</h3><small>Optional read-only source · Disconnected</small></div><span class="tag">Save baseline active</span></section>
+      </div>
+    </div>
+  </main>
+</section>
+
+<section class="frame dark" id="atlas" aria-labelledby="atlas-title">
+  <aside class="rail" data-section="Atlas"></aside>
+  <main class="main">
+    <header class="page-head">
+      <div><div class="meta">Shoreline grid / Main plan</div><h1 id="atlas-title">Atlas</h1></div>
+      <nav class="phases" aria-label="Atlas phases">
+        <a href="#charter">1 · Extract</a><a href="#charter">2 · Steel</a><a href="#atlas" class="current" aria-current="step">3 · Oil &amp; grid</a><a href="#charter">4 · Assembly</a>
+      </nav>
+    </header>
+    <div class="atlas-grid">
+      <div class="map">
+        <canvas id="terrain" width="900" height="668" role="img" aria-label="Illustrative regional map showing eight sites linked by eight material corridors and two grid ties. The Coast Trunk from Coast Oil to Spire Refinery is selected."></canvas>
+        <div class="map-overlay" id="site-labels"></div>
+        <div class="map-layer">Layers · Terrain / Sites / Corridors / Grid</div>
+        <div class="map-key"><span><i></i>Belt</span><span><i class="pipe"></i>Pipe</span><span><i class="power"></i>Grid tie</span></div>
+      </div>
+      <aside class="panel atlas-side" aria-labelledby="trunk-title">
+        <section>
+          <span class="meta">Selected pipe corridor</span>
+          <h2 id="trunk-title">Coast Trunk</h2><p class="muted">Coast Oil → Spire Refinery</p>
+          <div class="metric">270 <span class="small muted">/ 300 m³/min</span></div>
+          <div class="meter" aria-label="90 percent of budget"><span></span></div>
+          <span class="tag">30 m³/min available</span>
+        </section>
+        <section>
+          <h3>Throughput budget</h3>
+          <label class="budget"><input type="number" value="300" min="0" max="300" aria-label="Throughput budget in cubic metres per minute"> m³/min</label>
+          <div class="detents" aria-label="Pipe tier capacities"><span class="tag">Mk.1 · 300</span><span class="muted">Mk.2 · 600</span></div>
+          <small>Mk.2 is locked in Oil &amp; grid.</small>
+        </section>
+        <section>
+          <div class="row between"><h3>Headlift</h3><span class="tag">Surveyed</span></div>
+          <canvas class="profile" id="profile" width="472" height="128" role="img" aria-label="Pipe profile showing a 42 metre rise from pump outlet to crest against 50 metres available."></canvas>
+          <p><strong>42 m</strong> rise / <strong>50 m</strong> available</p>
+          <small>Mk.2 pump · Highest point before inlet</small>
+        </section>
+        <section>
+          <h3>Candidate B</h3><p class="muted" style="margin:5px 0 9px">310 m³/min required after the whole-building check.</p>
+          <span class="tag alert">10 m³/min over budget</span>
+        </section>
+      </aside>
+    </div>
+    <div class="atlas-foot small muted"><span>Spire Coast district · 8 sites · 8 material corridors · 2 grid ties</span><span>Illustrative terrain · Snapshot 18</span></div>
+  </main>
+</section>
+<script>
+const screens = [['Atlas','#atlas'],['Charter','#charter'],['Options'],['Redline'],['World & Library','#world']];
+for (const rail of document.querySelectorAll('.rail')) {
+  rail.innerHTML = '<div class="identity"><span class="emblem" aria-hidden="true">⌁</span><span>World<br>Architect</span></div>'
+    + '<div class="project"><strong>Shoreline grid</strong><small>Local project</small></div><nav aria-label="Project">'
+    + screens.map(([name, href]) => href
+      ? '<a href="' + href + '"' + (rail.dataset.section === name ? ' aria-current="page"' : '') + '>' + name + '</a>'
+      : '<span>' + name + '</span>').join('')
+    + '</nav><footer><small>Mockup — Sol R2</small></footer>';
+}
+const sites = [
+  {name:'Coast Oil', stat:'Crude · 270 m³/min', x:220, y:205, dx:-114, dy:-62},
+  {name:'Spire Refinery', stat:'Rubber · Plastic · Fuel', x:438, y:180, dx:15, dy:-42, active:true},
+  {name:'Cliff Power', stat:'Fuel generation · 750 MW', x:651, y:223, dx:14, dy:-48},
+  {name:'Rocky Coal', stat:'Coal · 240/min', x:158, y:406, dx:-67, dy:-66},
+  {name:'Canyon Forge', stat:'Steel beams · Pipes', x:371, y:395, dx:-46, dy:16},
+  {name:'Dune Works', stat:'Iron plates · 120/min', x:614, y:400, dx:-62, dy:-53},
+  {name:'East Grid', stat:'250 MW reserve target', x:767, y:376, dx:-47, dy:15},
+  {name:'Crater Assembly', stat:'Phase 4 site', x:642, y:536, dx:15, dy:10}
+];
+const routes = [
+  {ends:[0,1], via:[[300,199],[332,164],[397,166]], type:'active', label:['270 / 300',337,140]},
+  {ends:[1,2], via:[[518,190],[556,218],[605,225]], type:'pipe', label:['60 / 300',563,203]},
+  {ends:[3,4], via:[[232,426],[278,409],[321,386]], type:'belt', label:['240 / 270',246,443]},
+  {ends:[4,5], via:[[467,391],[514,413],[570,410]], type:'belt'},
+  {ends:[5,7], via:[[588,450],[597,492]], type:'belt', planned:true},
+  {ends:[4,7], via:[[469,469],[543,474],[573,519]], type:'belt', planned:true},
+  {ends:[1,7], via:[[483,248],[516,316],[530,369],[555,448],[581,486]], type:'belt', planned:true},
+  {ends:[5,4], via:[[542,447],[467,426]], type:'belt'},
+  {ends:[2,6], via:[[700,248],[734,302]], type:'power'},
+  {ends:[2,4], via:[[603,277],[521,285],[466,317]], type:'power'}
+];
+const map = document.querySelector('#terrain');
+const ctx = map.getContext('2d');
+const {width:w,height:h} = map;
+const heightAt = (x,y) => {
+  const ridge = (cx,cy,rx,ry) => Math.exp(-(((x-cx)/rx)**2) - ((y-cy)/ry)**2);
+  return -16 + 76*ridge(453,381,425,284) + 48*ridge(780,120,191,157)
+    + 35*ridge(220,520,172,105) + 68*ridge(606,478,159,161)
+    - 34*ridge(423,302,275,54) - 25*ridge(655,560,91,62)
+    + 11*Math.sin(x/55+y/29)*Math.sin(y/51) + 5*Math.sin(x/29-y/47);
+};
+const pixels = ctx.createImageData(w,h);
+for (let y=0; y<h; y++) {
+  for (let x=0; x<w; x++) {
+    const z = heightAt(x,y);
+    const shade = (heightAt(x-2,y-2)-z)*4 + 1.3*Math.sin(x*11.1+y*7.3);
+    const color = z < 0 ? [18+Math.max(z,-20)*.19,51+z*.24,64+z*.24]
+      : [30+z*.37,57+z*.38,56+z*.31];
+    const p = (y*w+x)*4;
+    for (let c=0;c<3;c++) pixels.data[p+c] = color[c]+shade;
+    pixels.data[p+3] = 255;
+  }
+}
+ctx.putImageData(pixels,0,0);
+const grid = 5;
+for (let level=0; level<=125; level+=5) {
+  ctx.beginPath();
+  for (let y=0; y<h-grid; y+=grid) {
+    for (let x=0; x<w-grid; x+=grid) {
+      const corners = [[x,y],[x+grid,y],[x+grid,y+grid],[x,y+grid]];
+      const values = corners.map(([px,py])=>heightAt(px,py));
+      const crossings = [];
+      for (let k=0;k<4;k++) {
+        const j=(k+1)%4;
+        if ((values[k]>=level)===(values[j]>=level)) continue;
+        const t=(level-values[k])/(values[j]-values[k]);
+        crossings.push(corners[k].map((v,n)=>v+t*(corners[j][n]-v)));
+      }
+      for (let k=0;k+1<crossings.length;k+=2) {
+        ctx.moveTo(...crossings[k]); ctx.lineTo(...crossings[k+1]);
+      }
+    }
+  }
+  ctx.strokeStyle = level===0 ? '#9fc8bc93' : level%25===0 ? '#cfe3b747' : '#d8ecd321';
+  ctx.lineWidth = level===0 ? 1.5 : 1;
+  ctx.stroke();
+}
+ctx.strokeStyle = '#b4d0cf22';
+ctx.setLineDash([3,6]);
+for (let x=50;x<w;x+=100) { ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke(); }
+for (let y=70;y<h;y+=100) { ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+ctx.setLineDash([]);
+ctx.fillStyle='#d9ebe8ba';
+ctx.font='600 14px Segoe UI, sans-serif';
+ctx.fillText('S P I R E  C O A S T',88,101);
+ctx.fillText('R O C K Y  D E S E R T',52,528);
+ctx.fillText('C R A T E R  L A K E S',567,608);
+ctx.textAlign='center';
+ctx.fillText('N',857,35);
+ctx.beginPath();ctx.moveTo(857,43);ctx.lineTo(850,60);ctx.lineTo(857,56);ctx.lineTo(864,60);ctx.fill();
+ctx.textAlign='left';
+ctx.strokeStyle='#d9ebe8ba';
+ctx.beginPath();ctx.moveTo(769,637);ctx.lineTo(862,637);ctx.moveTo(769,631);ctx.lineTo(769,637);ctx.moveTo(862,631);ctx.lineTo(862,637);ctx.stroke();
+ctx.fillText('500 m',793,627);
+const orderedRoutes = [...routes.slice(1), routes[0]];
+const colors = {active:'#adf1de',pipe:'#8acaba',belt:'#e5b883',power:'#ebd64c'};
+for (const route of orderedRoutes) {
+  const [a,b] = route.ends.map(i=>sites[i]);
+  ctx.beginPath();ctx.moveTo(a.x,a.y);
+  for (const point of route.via) ctx.lineTo(...point);
+  ctx.lineTo(b.x,b.y);
+  ctx.lineJoin='round';ctx.lineCap='round';
+  ctx.strokeStyle=route.type==='active' ? '#143d40' : '#14252d';
+  ctx.lineWidth=route.type==='active' ? 12 : 5;
+  ctx.stroke();
+  ctx.setLineDash(route.planned ? [7,7] : route.type==='power' ? [2,7] : []);
+  ctx.strokeStyle=colors[route.type];ctx.lineWidth=route.type==='active' ? 6 : 2.5;
+  ctx.stroke();
+  ctx.setLineDash([]);
+  if (route.label) {
+    const [label,x,y]=route.label;
+    ctx.font='600 13px Segoe UI, sans-serif';
+    const width=ctx.measureText(label).width+16;
+    ctx.fillStyle='#142c39';ctx.fillRect(x,y-13,width,22);
+    ctx.fillStyle=colors[route.type];ctx.fillText(label,x+8,y+2);
+  }
+}
+const labels = document.querySelector('#site-labels');
+for (const site of sites) {
+  ctx.fillStyle='#172e38';ctx.strokeStyle=site.active ? '#adf1de' : '#e3e9d9';ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(site.x,site.y,7,0,2*Math.PI);ctx.fill();ctx.stroke();
+  const label=document.createElement('div');
+  label.className='site-label'+(site.active?' active':'');
+  label.style.left=(site.x+site.dx)+'px';label.style.top=(site.y+site.dy)+'px';
+  label.innerHTML='<strong>'+site.name+'</strong><small>'+site.stat+'</small>';
+  labels.append(label);
+}
+const profile=document.querySelector('#profile').getContext('2d');
+profile.scale(2,2);
+profile.strokeStyle='#76979d';
+profile.setLineDash([5,4]);profile.beginPath();profile.moveTo(4,10);profile.lineTo(231,10);profile.stroke();
+profile.setLineDash([]);
+const points=[[6,53],[38,51],[70,39],[100,34],[137,17],[161,21],[193,29],[229,28]];
+profile.beginPath();profile.moveTo(...points[0]);
+for (const point of points.slice(1)) profile.lineTo(...point);
+profile.lineTo(229,59);profile.lineTo(6,59);profile.closePath();
+profile.fillStyle='#2c5159';profile.fill();
+profile.beginPath();profile.moveTo(...points[0]);
+for (const point of points.slice(1)) profile.lineTo(...point);
+profile.strokeStyle='#8bddcf';profile.lineWidth=2;profile.stroke();
+profile.fillStyle='#dcf3ec';profile.beginPath();profile.arc(137,17,3,0,2*Math.PI);profile.fill();
+</script>
+</body>
+</html>
+

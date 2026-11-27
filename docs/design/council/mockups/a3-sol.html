@@ -1,0 +1,458 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northern Works · Mockup — Sol R3</title>
+<style>
+.theme-dark{--bg:#0e1822;--panel:#142231;--panel-2:#1a2b3c;--line:#263a4d;--ink:#e6eef5;--muted:#8ea3b5;--accent:#5cc8e6;--ok:#4fd1a5;--warn:#f0b450;--bad:#ff6b5e;--plan:#7f97ab}
+.theme-light{--bg:#f3efe4;--panel:#fffdf6;--panel-2:#f7f3e8;--line:#dcd5c4;--ink:#1d2a30;--muted:#66727a;--accent:#1f6f8b;--ok:#2e8b6a;--warn:#b7791f;--bad:#c8463b;--plan:#9aa6ad}
+*{box-sizing:border-box}
+body{margin:0;background:#070e14;font:14px/1.45 system-ui,"Segoe UI",sans-serif}
+.frame{width:1440px;height:900px;margin:0 auto 24px;background:var(--bg);color:var(--ink);overflow:hidden}
+.frame:last-child{margin-bottom:0}
+h1,h2,h3,p{margin:0}
+h1{font-size:26px;line-height:1.15;letter-spacing:-.035em}
+h2,h3{font-size:18px;line-height:1.2;letter-spacing:-.018em}
+small,.micro,.chip,th{font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+small,.micro,.muted{color:var(--muted)}
+small,.micro{font-weight:650}
+.num,code,.hash,td.value{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.big{font:650 30px/1 ui-monospace,Consolas,monospace}
+button{font:inherit;font-weight:650;background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 12px;white-space:nowrap}
+button:disabled{color:var(--muted);opacity:.65}
+.primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.theme-light .primary{color:var(--panel)}
+.icon{width:33px;padding:4px 0;text-align:center;font-size:16px}
+.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;padding:2px 7px;white-space:nowrap;font-weight:650;color:var(--muted)}
+.chip.plain{letter-spacing:0;text-transform:none;font-size:14px;font-weight:500}
+.obs,.ok{color:var(--ok)}
+.der,.accent{color:var(--accent)}
+.inf,.warn{color:var(--warn)}
+.na{border-style:dashed;color:var(--muted)}
+.bad{color:var(--bad)}
+header{height:48px;display:flex;align-items:center;gap:9px;padding:0 14px;background:var(--panel);border-bottom:1px solid var(--line);white-space:nowrap}
+.mark{display:inline-grid;place-items:center;width:26px;height:26px;color:var(--accent);font-size:22px}
+.brand{font-size:16px;font-weight:750;letter-spacing:-.025em}
+.project-status{padding-left:12px;border-left:1px solid var(--line);font-weight:650}
+.spacer{flex:1}
+.shell{display:flex;height:852px}
+.rail{width:180px;flex:none;padding:15px 10px 12px;display:flex;flex-direction:column;background:var(--panel);border-right:1px solid var(--line)}
+.project-block{padding:6px 9px 18px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.project-block strong{display:block;font-size:17px;letter-spacing:-.026em}
+nav{display:grid;gap:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px;border:1px solid transparent;border-radius:8px;color:var(--muted);font-weight:630}
+.nav-item .symbol{width:20px;text-align:center;font-size:17px}
+.nav-item.active{color:var(--accent);background:var(--panel-2);border-color:var(--line)}
+.nav-item[aria-disabled=true]{opacity:.63}
+.rail-toggle{align-self:flex-end}
+.rail.compact{width:64px}
+.rail.compact .project-block,.rail.compact .nav-label,.rail.compact footer{display:none}
+.rail.compact .nav-item{justify-content:center}
+.rail footer{margin-top:auto;border-top:1px solid var(--line);padding:12px 8px 0;display:grid;gap:5px}
+.workspace{flex:1;min-width:0;display:flex}
+.main{min-width:0;flex:1;padding:20px 22px}
+.inspector{width:420px;padding:20px;flex:none;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:12px}
+.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:0 0 15px}
+.heading p{color:var(--muted);margin-top:6px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.inspector .panel,.subtle{background:var(--panel-2)}
+.pad{padding:12px 14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.flow{display:flex;flex-direction:column;gap:9px}
+.rule{border-top:1px solid var(--line)}
+.section-bar{padding:11px 13px;border-bottom:1px solid var(--line)}
+.stacks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.stack{padding:10px;border-right:1px solid var(--line)}
+.stack:last-child{border-right:0;background:var(--panel-2)}
+.stack p{margin-top:5px;color:var(--muted)}
+.lib{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.lib article{padding:10px 11px;min-height:108px}
+.lib h3{margin-bottom:4px}
+.lib p{margin-top:6px}
+.hash{letter-spacing:0;text-transform:none;font-size:12px}
+.scroll{overflow:auto;scrollbar-color:var(--line) var(--panel)}
+table{width:100%;border-collapse:separate;border-spacing:0;text-align:left}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line)}
+th{background:var(--panel-2);color:var(--muted);font-weight:700}
+tr:last-child td{border-bottom:0}
+td.selected{color:var(--accent);background:var(--panel-2)}
+dt{color:var(--muted)}
+dd{margin:0;text-align:right}
+dl{display:grid;grid-template-columns:auto 1fr;gap:6px 10px;margin:0}
+.field{padding:9px 12px;border-bottom:1px solid var(--line)}
+.field:last-child{border-bottom:0}
+.field p{margin-top:4px}
+.actions{display:flex;flex-wrap:wrap;gap:7px}
+.conflict{border-left:3px solid var(--warn)}
+.empty-layout{display:grid;grid-template-columns:440px 1fr;gap:16px;align-items:start}
+.path{padding:13px 14px;display:grid;grid-template-columns:33px 1fr;gap:10px}
+.path .symbol{width:32px;height:32px;display:grid;place-items:center;border:1px solid var(--line);border-radius:8px;color:var(--accent);font-size:20px;background:var(--panel-2)}
+.path p{margin:4px 0 9px;color:var(--muted)}
+.map{position:relative;overflow:hidden;background-color:var(--bg);background-image:linear-gradient(to right,var(--line) 1px,transparent 1px),linear-gradient(to bottom,var(--line) 1px,transparent 1px);background-size:42px 42px}
+.empty-map{height:487px;background-position:42px 24px}
+.coord{position:absolute;color:var(--muted);font:12px ui-monospace,Consolas,monospace}
+.map-empty-note{position:absolute;display:grid;place-items:center;inset:0;pointer-events:none}
+.map-empty-note>div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 18px;text-align:center}
+.scale{position:absolute;bottom:14px;right:14px;text-align:center}
+.scale span{display:block;border:1px solid var(--muted);border-top:0;width:78px;height:7px}
+.axis{position:absolute;left:15px;bottom:15px}
+.local-sources{margin-top:16px}
+.source-list{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:9px}
+.source-list div{display:flex;justify-content:space-between;gap:8px;align-items:center;border-top:1px solid var(--line);padding-top:7px}
+.matrix{max-height:490px}
+.matrix th{position:sticky;top:0;z-index:2}
+.matrix th:first-child,.matrix td:first-child{position:sticky;left:0}
+.matrix th:first-child{z-index:3}
+.matrix td:first-child{background:var(--panel);width:217px}
+.matrix td:not(:first-child),.matrix th:not(:first-child){text-align:right;white-space:nowrap}
+.matrix td{padding:5px 9px;height:41px}
+.matrix td:first-child small{display:block;font-size:12px;letter-spacing:0;text-transform:none;font-weight:500}
+.matrix .phase-active{background:var(--panel-2);color:var(--accent)}
+.list{margin:4px 0 0;padding-left:20px}
+.list li{margin:4px 0}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fork-map{height:198px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background-size:38px 38px}
+.fork-map canvas{display:block;width:100%;height:100%}
+.option-body{padding:12px 14px}
+.metric-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.metric{display:grid;gap:4px;min-height:70px}
+.metric .big span{font-size:14px;color:var(--muted)}
+.option-table td{padding:6px 0}
+.option-table td:nth-child(2){text-align:right;padding-left:8px}
+.map-key{position:absolute;bottom:8px;left:10px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 8px;font-size:12px}
+.key-plan{color:var(--plan)}
+.option-note{margin-top:11px}
+.shared-notes{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.shared-notes .panel p{margin-top:4px}
+</style>
+</head>
+<body>
+<section class="frame theme-light" aria-label="First run" data-nav="Atlas" data-empty="true">
+  <main class="main">
+    <div class="heading">
+      <div><h1>Start your world survey</h1><p>Northern Works is ready for its first world snapshot.</p></div>
+      <span class="chip">New project</span>
+    </div>
+    <div class="empty-layout">
+      <div class="flow">
+        <article class="panel path">
+          <div class="symbol" aria-hidden="true">▤</div>
+          <div><h3>Use my game install</h3><p>Docs and two saves found locally. Review the files and choose a baseline snapshot.</p><button class="primary">Review detected files</button></div>
+        </article>
+        <article class="panel path">
+          <div class="symbol" aria-hidden="true">◇</div>
+          <div><h3>Import a catalog pack</h3><p>Load node positions, resource defaults and well links from a pack you supply. The project pins its hash.</p><button>Choose catalog pack</button></div>
+        </article>
+        <article class="panel path">
+          <div class="symbol" aria-hidden="true">⌖</div>
+          <div><h3>Start a console survey</h3><p>Use a blank survey or your own preset to enter coordinates, node observations and site boundaries.</p><div class="actions"><button>Start survey</button><button>Open my preset</button></div></div>
+        </article>
+        <p class="muted">Nothing game-derived is bundled. Your files stay on this device.</p>
+      </div>
+      <div>
+        <article class="panel">
+          <div class="section-bar row"><h2>Coordinate grid</h2><span class="chip na">Terrain unavailable</span></div>
+          <div class="map empty-map" role="img" aria-label="Empty coordinate grid with north pointing up">
+            <span class="coord" style="top:7px;left:45px">−3 km</span><span class="coord" style="top:7px;left:46%">0 km</span><span class="coord" style="top:7px;right:18px">+3 km</span>
+            <span class="coord" style="top:28px;left:8px">+2</span><span class="coord" style="top:48%;left:8px">0</span><span class="coord" style="bottom:38px;left:8px">−2</span>
+            <div class="map-empty-note"><div><h3>No world sources loaded</h3><p class="muted">Imported or surveyed locations will appear here.</p></div></div>
+            <span class="axis num">↑ N</span><span class="scale num">1 km<span></span></span>
+          </div>
+        </article>
+      </div>
+    </div>
+    <article class="panel pad local-sources">
+      <div class="row"><h2>Source detection</h2><span class="muted">Preview only · no files imported</span></div>
+      <div class="source-list">
+        <div><span>Game Docs <code>en-US.json</code></span><span class="chip obs">Found</span></div>
+        <div><span>SaveGames <code>autosave_2.sav</code> + 1</span><span class="chip obs">Found</span></div>
+        <div><span>Catalog pack · nodes and wells</span><span class="chip na">Missing</span></div>
+        <div><span>Terrain and heightmap</span><span class="chip na">Missing</span></div>
+      </div>
+    </article>
+  </main>
+</section>
+<section class="frame theme-dark" aria-label="World and Library" data-nav="World &amp; Library">
+  <main class="main">
+    <div class="heading"><div><h1>World &amp; Library</h1><p>Baseline autosave_2 · 21:40 · incoming autosave_3 · 22:05</p></div><span class="chip inf">Rebase pending</span></div>
+    <article class="panel">
+      <div class="section-bar row"><h2>World layers</h2><span class="micro">Precedence increases →</span></div>
+      <div class="stacks">
+        <div class="stack"><span class="chip">Catalog</span><p>Node defaults and well links</p></div>
+        <div class="stack"><span class="chip">Inferred</span><p>Save-derived estimates</p></div>
+        <div class="stack"><span class="chip">Observed</span><p>Fields recorded in save</p></div>
+        <div class="stack"><span class="chip">Manual</span><p>Player edits pinned to snapshot</p></div>
+      </div>
+      <table aria-label="Inspected world fields">
+        <thead><tr><th>Field · Coal node C2</th><th>Effective value</th><th>Layer</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td class="selected">Purity</td><td>Pure</td><td><span class="chip">Manual</span></td><td><span class="chip inf" title="Inferred">INF</span></td></tr>
+          <tr><td>Resource</td><td>Coal</td><td><span class="chip">Catalog</span></td><td><span class="chip inf" title="Inferred">INF</span></td></tr>
+          <tr><td>Position · Grid C2</td><td class="num">−1,104 / +2,416 m</td><td><span class="chip">Observed</span></td><td><span class="chip obs" title="Observed">OBS</span></td></tr>
+          <tr><td>Extractor connection</td><td>Miner Mk.2 → North Pit</td><td><span class="chip">Observed</span></td><td><span class="chip obs" title="Observed">OBS</span></td></tr>
+          <tr><td>Extraction capacity · base clock</td><td class="num">240 items/min</td><td><span class="chip">Manual</span></td><td><span class="chip der" title="Derived from purity and extractor">DER</span></td></tr>
+          <tr><td>Bench → Basin headlift</td><td>Height profile missing</td><td>—</td><td><span class="chip na" title="Unavailable">N/A</span></td></tr>
+        </tbody>
+      </table>
+    </article>
+    <div class="row" style="margin:15px 0 8px"><h2>Library</h2><span class="muted">Sources for the current project</span></div>
+    <div class="lib">
+      <article class="panel"><h3>Game Docs</h3><span class="chip plain">Imported · <code>2f48…1d9c</code></span><p class="muted">Local <code>en-US.json</code></p></article>
+      <article class="panel"><h3>Catalog pack</h3><span class="chip plain">Pinned · <code>7c91…b60e</code></span><p class="muted">Resource nodes and well links</p></article>
+      <article class="panel"><h3>Terrain</h3><span class="chip na">Missing</span><p class="muted">Coordinate grid active</p></article>
+      <article class="panel"><h3>Console survey</h3><span class="chip plain">2 entries</span><p class="muted">North Pit · water bench</p></article>
+      <article class="panel"><h3>Live telemetry</h3><span class="chip na">Disconnected</span><p class="muted">Overlay only · Path 2</p></article>
+      <article class="panel"><h3>Unknown classes</h3><span class="chip inf">1 class · 3 objects</span><p class="muted">Raw objects retained</p></article>
+    </div>
+  </main>
+  <aside class="inspector" aria-label="Field inspection and rebase review">
+    <div><small>Coal node C2 · North Pit</small><h2 style="margin-top:4px">Purity provenance</h2></div>
+    <div class="panel">
+      <div class="field row"><strong>Manual · Pure</strong><span class="chip inf">INF</span></div>
+      <div class="field"><p>Player estimate pinned to <code>autosave_2</code>.</p></div>
+      <div class="field row"><span>Observed · baseline</span><span class="chip na">N/A</span></div>
+      <div class="field row"><span>Inferred · no estimate</span><span class="chip na">N/A</span></div>
+      <div class="field row"><span>Catalog · Normal</span><span class="chip inf">INF</span></div>
+    </div>
+    <article class="panel pad conflict flow">
+      <div class="row"><h2>Rebase review</h2><span class="chip inf">1 conflict</span></div>
+      <strong>Manual vs Observed</strong>
+      <dl><dt>Manual on autosave_2</dt><dd>Pure <span class="chip inf">INF</span></dd><dt>Observed in autosave_3</dt><dd>Normal <span class="chip obs">OBS</span></dd></dl>
+      <p>Choose the value for the rebased revision. Both source records stay attached to their snapshots.</p>
+      <div class="actions"><button>Keep manual</button><button>Use observed</button></div>
+    </article>
+    <article class="panel pad flow">
+      <div class="row"><h2>Unknown classes</h2><span class="chip na">N/A</span></div>
+      <code>Build_ModularPump_X_C × 3</code>
+      <p class="muted">Class ID, positions and raw object data retained. Dependent flow and headlift at Grid C3 are unavailable.</p>
+      <div><button>Inspect raw records</button></div>
+    </article>
+  </aside>
+</section>
+<section class="frame theme-light" aria-label="Charter" data-nav="Charter">
+  <main class="main">
+    <div class="heading"><div><h1>Charter</h1><p>Production targets by phase · blank cells are unconstrained.</p></div><button>Add goal</button></div>
+    <article class="panel scroll matrix">
+      <table aria-label="Goals by phase">
+        <thead><tr><th scope="col">Goal · site / unit</th><th scope="col">01 Survey</th><th scope="col">02 Commission</th><th scope="col" class="phase-active">03 Expansion</th><th scope="col">04 Reserve</th></tr></thead>
+        <tbody id="goals"></tbody>
+      </table>
+    </article>
+    <article class="panel option-note">
+      <div class="section-bar row"><h2>Phase 03 · Pins and exclusions</h2><button>Edit scope</button></div>
+      <div class="pad flow">
+        <div class="row"><span><strong>Pin</strong> · Coal generator banks at Basin D4</span><span class="chip">Site</span></div>
+        <div class="row"><span><strong>Exclude</strong> · Coal node C2 pending survey</span><span class="chip">Node</span></div>
+      </div>
+    </article>
+  </main>
+  <aside class="inspector" aria-label="Charter settings and draft receipt">
+    <div><small>Selected phase</small><h2 style="margin-top:4px">03 · Expansion</h2></div>
+    <article class="panel pad flow">
+      <div class="row"><h2>Hard constraints</h2><button>Edit budgets</button></div>
+      <dl><dt>North Trunk · belt budget</dt><dd class="num">360 items/min</dd><dt>Belt hardware cap</dt><dd class="num">480 items/min</dd><dt>Bench → Basin · pipe budget</dt><dd class="num">240 m³/min</dd><dt>Pipe hardware cap</dt><dd class="num">300 m³/min</dd><dt>Confirmed headlift limit</dt><dd class="num">20 m / segment</dd></dl>
+      <p class="muted">Bench → Basin profile unavailable <span class="chip na">N/A</span></p>
+    </article>
+    <article class="panel pad">
+      <div class="row"><h2>Objective order</h2><button>Reorder</button></div>
+      <ol class="list"><li>Minimize target shortfall</li><li>Minimize North Trunk load</li><li>Minimize installed buildings</li></ol>
+    </article>
+    <article class="panel pad flow">
+      <div class="row"><h2>Draft allocation receipt</h2><span class="chip inf">Provisional</span></div>
+      <p class="muted">Candidate A · Expansion · <code>93af…217c</code></p>
+      <div class="row"><span>Entered targets met</span><strong class="num">8 / 8</strong></div>
+      <div class="row"><span>Whole-building check</span><span class="chip obs">Passed</span></div>
+      <p>42 whole buildings. Belt and pipe flows checked. Bench → Basin headlift remains unavailable.</p>
+      <div class="actions"><button>Open candidate</button><button>View receipt</button></div>
+    </article>
+  </aside>
+</section>
+<section class="frame theme-dark" aria-label="Options" data-nav="Options">
+  <main class="main">
+    <div class="heading"><div><h1>Options</h1><p>03 · Expansion · Same 8 targets · autosave_2 · 21:40 · No ranking; your objective order decides</p></div><button>Diff</button></div>
+    <div class="options">
+      <article class="panel">
+        <div class="section-bar row"><div><small>A · north-refine@r42</small><h2>Refine at North Pit</h2></div><span class="chip inf">Provisional</span></div>
+        <div class="map fork-map"><canvas data-route="refine" aria-label="North Pit sends iron ingots along the North Trunk"></canvas><span class="map-key"><span class="key-plan">━ Planned corridor</span> · ▣ Site</span></div>
+        <div class="option-body flow">
+          <div class="metric-strip">
+            <div class="metric"><span class="micro">Trunk load</span><strong class="big">240<span>/min</span></strong></div>
+            <div class="metric"><span class="micro">Net export</span><strong class="big">326<span> MW</span></strong></div>
+            <div class="metric"><span class="micro">Whole buildings</span><strong class="big">42</strong></div>
+          </div>
+          <table class="option-table" aria-label="Fork A tradeoffs"><tbody>
+            <tr><td>North Trunk · iron ingots</td><td class="num">240 / 360 items/min</td></tr>
+            <tr><td>Trunk spare capacity</td><td class="num">120 items/min</td></tr>
+            <tr><td>North Pit processing</td><td class="num">6 buildings</td></tr>
+            <tr><td>Local iron feed · Foundry</td><td class="num">120 items/min</td></tr>
+            <tr><td>Basin fuel · C1 coal feed</td><td class="num">120 items/min</td></tr>
+            <tr><td>Water corridor · headlift</td><td><span class="chip na">N/A</span></td></tr>
+            <tr><td>Entered targets · whole-building check</td><td class="ok">8/8 · Passed</td></tr>
+          </tbody></table>
+          <div class="rule"></div>
+          <div class="row"><span>Spec fingerprint <code>93af…217c</code></span><button>Keep A as main</button></div>
+        </div>
+      </article>
+      <article class="panel">
+        <div class="section-bar row"><div><small>B · ship-raw@r43</small><h2>Ship ore to Foundry</h2></div><span class="chip inf">Provisional</span></div>
+        <div class="map fork-map"><canvas data-route="raw" aria-label="North Pit sends iron ore along the North Trunk to Foundry"></canvas><span class="map-key"><span class="key-plan">━ Planned corridor</span> · ▣ Site</span></div>
+        <div class="option-body flow">
+          <div class="metric-strip">
+            <div class="metric"><span class="micro">Trunk load</span><strong class="big">360<span>/min</span></strong></div>
+            <div class="metric"><span class="micro">Net export</span><strong class="big">308<span> MW</span></strong></div>
+            <div class="metric"><span class="micro">Whole buildings</span><strong class="big">46</strong></div>
+          </div>
+          <table class="option-table" aria-label="Fork B tradeoffs"><tbody>
+            <tr><td>North Trunk · iron ore</td><td class="num">360 / 360 items/min</td></tr>
+            <tr><td>Trunk spare capacity</td><td class="num">0 items/min</td></tr>
+            <tr><td>North Pit processing</td><td class="num">0 buildings</td></tr>
+            <tr><td>Local iron feed · Foundry</td><td class="num">0 items/min</td></tr>
+            <tr><td>Basin fuel · C1 coal feed</td><td class="num">120 items/min</td></tr>
+            <tr><td>Water corridor · headlift</td><td><span class="chip na">N/A</span></td></tr>
+            <tr><td>Entered targets · whole-building check</td><td class="ok">8/8 · Passed</td></tr>
+          </tbody></table>
+          <div class="rule"></div>
+          <div class="row"><span>Spec fingerprint <code>ee76…c804</code></span><button>Edit B</button></div>
+        </div>
+      </article>
+    </div>
+    <div class="shared-notes option-note">
+      <article class="panel pad">
+        <h2>Basin D4 · Shared cooling plan</h2>
+        <p class="muted">Eight coal generators use 180 m³/min from Water Bench and another 180 m³/min from Basin intake.</p>
+      </article>
+      <article class="panel pad">
+        <h2>North Trunk sensitivity</h2>
+        <p class="muted">At 300 items/min, A stays within budget and B’s current route exceeds it by 60 items/min.</p>
+      </article>
+    </div>
+  </main>
+</section>
+<script>
+const navigation = [["⌖","Atlas"],["▤","Charter"],["◇","Options"],["±","Redline"],["▱","World & Library"]];
+for (const frame of document.querySelectorAll(".frame")) {
+  const empty = frame.dataset.empty === "true";
+  const current = frame.dataset.nav;
+  const content = document.createElement("div");
+  content.className = "shell";
+  const workspace = document.createElement("div");
+  workspace.className = "workspace";
+  workspace.append(...frame.children);
+  frame.innerHTML =
+    '<header><span class="mark" aria-hidden="true">⌖</span><span class="brand">World Architect</span>' +
+    '<span class="project-status">Northern Works / <code>' + (empty ? 'main@r0' : 'main@r41') + '</code></span>' +
+    '<span class="chip plain">' + (empty ? 'No world snapshot' : 'autosave_2 · 21:40 · Observed') + '</span>' +
+    '<span class="chip plain">Docs / Catalog <code>' + (empty ? '— / —' : '2f48…1d9c / 7c91…b60e') + '</code></span>' +
+    '<span class="chip plain">Live: off</span><span class="spacer"></span>' +
+    '<button class="icon" aria-label="Toggle theme">' + (frame.classList.contains("theme-light") ? '☾' : '☀') + '</button>' +
+    '<button' + (empty ? ' disabled' : '') + '>Check plan</button>' +
+    '<button class="primary"' + (empty ? ' disabled' : '') + '>Draft allocation</button></header>';
+  const rail = document.createElement("aside");
+  rail.className = "rail";
+  rail.innerHTML =
+    '<button class="icon rail-toggle" aria-label="Collapse navigation" aria-expanded="true">‹</button><div class="project-block"><small>Project</small><strong>Northern Works</strong><span class="muted">Local workspace</span></div>' +
+    '<nav aria-label="Project navigation">' + navigation.map(([icon, label]) => {
+      const active = current === label;
+      const unavailable = empty && !active && label !== "World & Library";
+      const state = active ? ' aria-current="page"' : unavailable ? ' aria-disabled="true"' : '';
+      return '<div class="nav-item' + (active ? ' active' : '') + '"' + state + ' aria-label="' + label + '"><span class="symbol" aria-hidden="true">' + icon + '</span><span class="nav-label">' + label + '</span></div>';
+    }).join("") + '</nav>' +
+    '<footer><small>Snapshot</small><span>' + (empty ? 'None loaded' : 'autosave_2 · 21:40') + '</span><span class="muted">Journal: 0 pending</span><small style="margin-top:8px">Mockup — Sol R3</small></footer>';
+  const railButton = rail.querySelector(".rail-toggle");
+  railButton.addEventListener("click", () => {
+    const compact = rail.classList.toggle("compact");
+    railButton.textContent = compact ? "›" : "‹";
+    railButton.setAttribute("aria-label", compact ? "Expand navigation" : "Collapse navigation");
+    railButton.setAttribute("aria-expanded", String(!compact));
+    frame.querySelectorAll("canvas").forEach(drawMap);
+  });
+  content.append(rail, workspace);
+  frame.append(content);
+  const themeButton = frame.querySelector("header .icon");
+  themeButton.addEventListener("click", () => {
+    const dark = frame.classList.toggle("theme-dark");
+    frame.classList.toggle("theme-light", !dark);
+    themeButton.textContent = dark ? "☀" : "☾";
+    frame.querySelectorAll("canvas").forEach(drawMap);
+  });
+}
+const goals = [
+  ["Iron plates","Foundry E3 · items/min","",90,120,240],
+  ["Iron rods","Foundry E3 · items/min","",30,40,90],
+  ["Concrete","Works D3 · items/min",15,45,90,120],
+  ["Steel beams","Works D3 · items/min","","",30,60],
+  ["Steel pipes","Works D3 · items/min","","",40,80],
+  ["Rotors","Foundry E3 · items/min","","",12,24],
+  ["Water delivery","Basin D4 · m³/min","",120,180,240],
+  ["Net power export","Basin D4 · MW","",150,300,450]
+];
+document.querySelector("#goals").innerHTML = goals.map(([name, place, ...values]) =>
+  '<tr><td><strong>' + name + '</strong><small>' + place + '</small></td>' + values.map((value, index) =>
+    '<td class="value' + (index === 2 ? ' phase-active' : '') + '"' + (value === "" ? ' aria-label="Unconstrained"' : '') + '>' + value + '</td>'
+  ).join("") + '</tr>'
+).join("");
+function drawMap(canvas) {
+  const style = getComputedStyle(canvas);
+  const token = name => style.getPropertyValue(name).trim();
+  const raw = canvas.dataset.route === "raw";
+  const w = canvas.clientWidth;
+  const h = canvas.clientHeight;
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = w * ratio;
+  canvas.height = h * ratio;
+  const ctx = canvas.getContext("2d");
+  ctx.scale(ratio, ratio);
+  const location = ([x, y]) => [x * w, y * h];
+  const north = [.19,.34], works = [.52,.43], foundry = [.82,.29], basin = [.63,.74], bench = [.36,.76];
+  const route = (points, color, width, dash = []) => {
+    ctx.beginPath();
+    ctx.setLineDash(dash);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineJoin = "round";
+    points.forEach((point, index) => {
+      const [x,y] = location(point);
+      if (index === 0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+  };
+  route([north,[.32,.34],[.42,.43],works,[.65,.43],[.75,.29],foundry],token("--plan"),raw ? 4 : 3);
+  route([north,[.24,.60],[.47,.60],[.55,.74],basin],token("--plan"),2,[5,4]);
+  route([bench,[.46,.81],[.55,.81],basin],token("--accent"),2,[3,4]);
+  const labels = [
+    [north,"North Pit C2",raw ? "Extraction" : "Refining",-15],
+    [works,"Works D3","",-13],
+    [foundry,"Foundry E3",raw ? "Refining" : "Fabrication",-15],
+    [basin,"Basin D4","Coal power",23],
+    [bench,"Water bench C4","",21]
+  ];
+  ctx.textAlign = "center";
+  for (const [point, label, detail, offset] of labels) {
+    const [x,y] = location(point);
+    ctx.fillStyle = token("--panel");
+    ctx.strokeStyle = token("--accent");
+    ctx.lineWidth = 2;
+    ctx.fillRect(x-5,y-5,10,10);
+    ctx.strokeRect(x-5,y-5,10,10);
+    ctx.font = "600 14px system-ui";
+    ctx.fillStyle = token("--ink");
+    ctx.fillText(label,x,y+offset);
+    if (detail) {
+      ctx.font = "12px system-ui";
+      ctx.fillStyle = token("--muted");
+      ctx.fillText(detail,x,y+offset+(offset < 0 ? -15 : 15));
+    }
+  }
+  ctx.font = "12px ui-monospace, Consolas, monospace";
+  ctx.fillStyle = token("--muted");
+  ctx.textAlign = "right";
+  ctx.fillText("↑ N",w-13,19);
+  ctx.fillText("Grid C2–E4",w-13,h-13);
+}
+document.querySelectorAll("canvas").forEach(drawMap);
+</script>
+</body>
+</html>

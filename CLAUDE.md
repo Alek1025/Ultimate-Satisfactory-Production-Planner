@@ -1,56 +1,49 @@
 # Ultimate Satisfactory Production Planner
 
-A browser app that reads a Satisfactory (Update 1.2) save and the game's Docs file, then solves for
-the best factory with an LP solver (HiGHS, WebAssembly). Everything runs locally.
+Being **rewritten from scratch** as an offline standalone desktop app: a map-scale **World
+Architect** (the player sets every goal) plus factual **Plan-vs-Actual** reports from saves.
+Target game version is Update 1.2. There is no code for the rewrite yet; the next step is
+milestone **M0**, a headless port of the v1 parsers and solver.
 
-## Commands
+## Read first
 
-```
-npm run dev          # Vite dev server, http://localhost:4173
-npm test             # Vitest (parser, solver, plans, graph)
-npm run typecheck    # tsc for src/ and app/
-npm run lint         # ESLint (bug-catching rules only; no formatter, keep the existing style)
-npm run build:app    # typecheck + build into dist-app/
-npm run summary -- fixtures/en-US.json fixtures/<save>.sav
-npm run plan -- fixtures/en-US.json fixtures/<save>.sav '<request json>'
-```
-
-Hooks in `.claude/settings.json`: each edited `.ts`/`.tsx`/`.mjs` file is linted right away, and
-before a turn ends `npm run typecheck` runs if TypeScript files have uncommitted changes.
-
-Before calling work done, run `npm run typecheck` and `npm test`.
+- `docs/design/direction.md`: what the app is, and what was ruled out.
+- `docs/design/architecture.md`: stack, processes, interfaces, World State, `.ussp` project file,
+  UI design language and screens, milestones M0–M3, test invariants and the owner's decisions. It
+  is long, so read the section you need.
+- `docs/rewrite-notes.md`: technical lessons from v1 (save format, Docs parsing, solver, bugs to
+  design out).
 
 ## Layout
 
-- `src/` — no DOM code outside `src/platform/browser/`.
-  - `save/` parses the `.sav` format, `gamedata/` parses the Docs file plus the bundled node catalog,
-    `solver/` builds and solves the LP (lexicographic objectives, diagnosis, explanations),
-    `plans/` handles the plan schema, versioning, storage and export/import.
-- `app/` — React 18 + Vite UI. Parsing and solving run in a Web Worker (`app/engine/`).
-  `app/graph/` is the flow graph (ELK layout), `app/screens/` holds one file per screen,
-  and `app/ui/` holds the shared kit plus the map data (outline, terrain, heights, biomes).
-- `scripts/` — TypeScript command-line tools (run with `tsx`) and the Python map-tracing scripts.
-  Map source images go in `scripts/map-sources/`, which is gitignored.
-- `test/` — Vitest tests. `test/fixtures.ts` holds the expected values for each save.
+- `docs/`: the design docs above. `docs/design/council/` holds the raw council notes and HTML
+  mockups; these are background only.
+- `archive/v1/`: the first version, a browser app. It is frozen and kept as a **technical
+  reference**: M0 ports its parsers and solver. See `archive/README.md` for how to run it.
+- `fixtures/`: gitignored Docs files and saves listed in `fixtures/README.md`.
 
-## Constraints
+## Rules
 
-- No network access at runtime: fonts, HiGHS WASM and all data are bundled.
-- Target game version is Update 1.2. Node >= 22.12.
-- `fixtures/` is gitignored and holds the game Docs files and saves listed in `fixtures/README.md`.
-  Tests whose fixtures are missing are **skipped**, not failed, so a green run without fixtures
-  proves little. Worktrees get the fixtures from `node scripts/setup-worktree.mjs`.
-- Game-derived data (`src/gamedata/data/`, `app/ui/map-*`) is not MIT licensed; see the README's
-  License section before adding more.
+- **Never tell the player what to build next.** The solver only runs on targets the player entered
+  ("Draft allocation"). Reports state facts. UI copy must not recommend.
+- **Fresh design.** Don't reuse v1's UI, screens or visual system (`archive/v1/DESIGN.md`,
+  `archive/v1/app/`). Use v1 only for technical facts.
+- **No network access at runtime.** The only exception is the optional local telemetry bridge after
+  M3.
+- **Bundle no game-derived data.** It comes from the player's install or from files they supply.
+- **Missing fixtures must fail tests, not skip them** (v1 skipped them, so a green run proved
+  little).
+- **Stretch goals,** so don't build them early: custom themes, terrain/heightmap, corridor headlift
+  sampling. Live telemetry comes after M3.
+- **Keep the docs current.** When a design decision changes, update `docs/design/architecture.md`
+  or `direction.md` in the same change.
 
-## DESIGN.md
+## Hooks
 
-`DESIGN.md` is long (about 60 KB). Read only the section you need:
+`.claude/settings.json` sets two hooks:
+- Each edited `.ts`/`.tsx`/`.js`/`.mjs` file is linted right away.
+- Before a turn ends, `npm run typecheck` runs if TypeScript files have uncommitted changes.
 
-- Save or game-data parsing → "Parsing core"
-- Solver model, objectives, diagnosis → "Solver"
-- Plan schema, versioning, export → "Plans and storage"
-- Visual system, screens, empty states → "UI design"
-- App architecture, flow graph, Nodes/Recipes/Plans implementation → "UI implementation"
-
-When behavior or a design decision changes, update the matching DESIGN.md section in the same change.
+Both skip quietly until the rewrite has a root `package.json` (with a `typecheck` script) and an
+`eslint.config.js`. Once the rewrite has code, run `npm run typecheck` and `npm test` before calling
+work done.

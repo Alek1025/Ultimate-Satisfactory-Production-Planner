@@ -1,0 +1,7 @@
+Gemini R4 final: Mod verdict = only as optional read-only companion bridge, not the planner (SML lag after patches, Unreal C++ split, MP/dedicated testing, excludes console/crossplay/unmodded). Check FicsIt Remote Monitoring + official dedicated-server API first.
+Path 1 World Architect + Autosave Plan-vs-Actual (offline desktop; player sets all goals; factual variance reports; PC+console via presets/manual). Risk: autosaves miss intermittent dips; corridors need in-game terrain check.
+Path 2 Live-Linked Architect & Operations Desk (desktop + optional read-only live bridge, FRM first; live verification, sustained vs momentary shortfalls; optional marker export). Risk: second compatibility cycle; attribution.
+Path 3 In-Game Field Survey & Logistics Mod (in-game terminal; pin nodes, sketch corridors, walk routes with waypoints, inspect machines in-world). Risk: patches take planner offline; Unreal UI + MP dominate dev.
+Agree: no in-game planner; mod only as read-only bridge; evaluate FRM first; anchor on desktop architect. Differ: Opus = autosave plan-vs-actual, live strictly secondary; Sol = more weight on live telemetry, more consideration for in-game survey.
+Rec: Path 1 designed so live telemetry plugs in as an optional source (Path 2 later).
+Deciding question: patch-proof standalone desktop architect first with live telemetry later, or is zero-alt-tab live in-session feedback essential enough to tie the product to the mod ecosystem?
