@@ -25,16 +25,19 @@ Pixel settings below are for a 1227px-wide image and scale with the input's widt
 world metres, for an area the main image draws differently. Put the box edges where
 both images agree (open sea or inland), so no seam shows.
 
-Current source: the wiki's 5000px full map (satisfactory.wiki.gg), saved as
-scripts/map-sources/wiki-map.jpg. It shows the northern fjords and islands, so no
---region-from patch is needed (the earlier Map Genie + in-game composite used one). Run as
+Current source: the game's own map textures, four 4096px quadrants exported from the game
+files and joined by scripts/stitch-map-quadrants.py into scripts/map-sources/game-map.png
+(8192px). Run as
 
-  python scripts/trace-map-outline.py scripts/map-sources/wiki-map.jpg --detail 4
+  python scripts/trace-map-outline.py scripts/map-sources/game-map.png --detail 4
 
---detail 4 simplifies to about 1.8 m instead of 7 m (about 21,200 points, 214 KB, 82 KB
-gzipped). It registers to the earlier Map Genie image within 0.12% (about 4 m). Of the 1.2
-default save's 625 nodes, 607 (97.1%) fall inside the traced land; the other 18 sit a median
-10 m (at most 54 m) from a line, i.e. on shorelines and lake edges.
+--detail 4 simplifies to about 1.8 m instead of 7 m (about 26,600 points, 270 KB, 102 KB
+gzipped). The game map registers to the earlier sources (the wiki's 5000px map is a downscale
+of it) within 0.01% and a tenth of a pixel. Of the 1.2 default save's 625 nodes, 617 (98.7%)
+fall inside the traced land; the other 8 sit a median 6 m (at most 54 m) from a line, i.e. on
+shorelines and lake edges. Speck and stroke cleanup are set in metres, not scaled with the
+image. Thin land with water on two separate sides (arches, and the map's strokes for
+cliff edges and falls) is removed so rivers and channels run on under it, as in the game.
 """
 import json
 import os
@@ -49,9 +52,12 @@ Y0, Y1 = -375000.0, 375000.0
 REF_W = 1227           # the pixel settings below are tuned for an image this wide
 LAND_BLUE = 25         # land pixels: blue beats red by less than this (sea is ~45, shallows 70+);
                        # loose enough to keep the dark shaded rims of small islets
-LAND_SPECK_PX = 2      # land narrower than this is noise
+LAND_SPECK_M = 3       # land narrower than this many metres is noise
 WATER_SPECK_PX = 2     # water narrower than this joins the land (then traced as a river line)
-STROKE_PX = 3          # thin land up to this wide that separates two bodies of water is a drawn stroke
+STROKE_M = 16          # thin land up to this many metres wide that separates two bodies of water is an
+                       # arch or a drawn stroke over the water, which carries on under it
+STROKE_DARK = 110      # pixels darker than this (mean of r, g, b) are drawn strokes...
+STROKE_NEAR_M = 6      # ...and count as water this close to water
 MIN_ISLAND_PX = 12     # drop specks of land (area)
 MIN_LAKE_PX = 8        # enclosed water smaller than this is noise (area)
 VOID_GLOW_PX = 25      # the off-map area's white border and grey glow reach this far from the black
@@ -68,7 +74,7 @@ GLOW_FULL_M = 400      # open sea is full colour this close to land...
 GLOW_FADE_M = 2800     # ...and gone this far out (measured through sea)
 GLOW_SOFTEN_M = 150    # final blur, to round off the distance field
 GLOW_VOID_M = 1000     # the glow fades out over this distance towards off-map black
-GLOW_VOID_OUT_M = 3000 # ...over this distance once past the map's edge
+GLOW_VOID_OUT_M = 6000 # ...over this distance once past the map's edge
 GLOW_EDGE_M = 2400     # and everywhere over this distance past the map's edge
 CLEANUP_DETAIL_MAX = 2  # --detail beyond this sharpens shapes but not the speck cleanup
 DISK = lambda d: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (d, d))
@@ -99,21 +105,21 @@ def thin(mask: np.ndarray) -> np.ndarray:
 
 
 def drop_strokes(land: np.ndarray, disk: np.ndarray) -> np.ndarray:
-    """The map draws thin dark strokes (cliff edges, falls) across rivers, which read as
-    land and cut a river in two. Remove thin land that separates two different bodies of
-    water; keep thin land that doesn't (a swamp's islets and spits)."""
+    """Thin land across water (rock arches, and drawn strokes for cliff edges and falls) cuts
+    a river or channel in two; the water carries on under it. Remove thin land with water on
+    two separate sides (the water just around it falls into two or more pieces), even when
+    those waters join up elsewhere; keep thin land that water only wraps around (a spit)."""
     thin_land = ((land > 0) & (cv2.morphologyEx(land, cv2.MORPH_OPEN, disk) == 0)).astype(np.uint8)
-    _, water = cv2.connectedComponents(((land == 0) * 255).astype(np.uint8), connectivity=8)
+    water = land == 0
     count, labels, stats, _ = cv2.connectedComponentsWithStats(thin_land, connectivity=8)
     out = land.copy()
     for i in range(1, count):
         x, y, bw, bh = stats[i, :4]
-        y0, x0 = max(0, y - 1), max(0, x - 1)
-        piece = labels[y0:y + bh + 1, x0:x + bw + 1] == i
-        ring = cv2.dilate(piece.astype(np.uint8), np.ones((3, 3), np.uint8)) > 0
-        touching = set(np.unique(water[y0:y + bh + 1, x0:x + bw + 1][ring])) - {0}
-        if len(touching) >= 2:
-            out[y0:y + bh + 1, x0:x + bw + 1][piece] = 0
+        y0, x0 = max(0, y - 2), max(0, x - 2)
+        piece = labels[y0:y + bh + 2, x0:x + bw + 2] == i
+        ring = (cv2.dilate(piece.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0) & ~piece & water[y0:y + bh + 2, x0:x + bw + 2]
+        if cv2.connectedComponents(ring.astype(np.uint8), connectivity=8)[0] - 1 >= 2:
+            out[y0:y + bh + 2, x0:x + bw + 2][piece] = 0
     return out
 
 
@@ -191,8 +197,11 @@ def sea_glow(landmass: np.ndarray, void: np.ndarray, out_png: str) -> dict[str, 
     m = round(GLOW_MARGIN_M / GLOW_CELL_M)             # margin cells on each side
     land = cv2.resize(landmass.astype(np.float32), (n, n), interpolation=cv2.INTER_AREA) > 0.2
     off = cv2.resize(void.astype(np.float32), (n, n), interpolation=cv2.INTER_AREA) > 0.5
+    # Past the image's edge each cell takes the off-map state of the nearest edge cell, so black
+    # carries on outward; the fades below keep the result soft and round.
+    idx = np.clip(np.arange(-m, n + m), 0, n - 1)
     land = np.pad(land, m)
-    off = np.pad(off, m) & ~land
+    off = off[np.ix_(idx, idx)] & ~land
 
     # Geodesic distance (in cells) from land through non-off-map cells: relax 8-neighbour steps.
     dist = np.where(land, 0.0, np.inf)
@@ -264,14 +273,27 @@ def main() -> None:
     length = lambda v: v * k
     area = lambda v: v * ks * ks
     kernel = lambda v, kk=k: max(1, round(v * kk)) | 1  # odd structuring-element size
-    land = (((b - r < LAND_BLUE) & (r > 70)) * 255).astype(np.uint8)
+    # Water is whatever's clearly blue; dark strokes and cliff shadows are land. (Off-map black,
+    # which isn't blue either, is taken out next.)
+    land = ((b - r < LAND_BLUE) * 255).astype(np.uint8)
     void = off_map(im, length(VOID_GLOW_PX), k * k * MIN_VOID_PX)
     land[void] = 0
+    px_m = w / ((X1 - X0) / 100)  # pixels per metre
+    # Dark strokes the map draws across rivers (cliff edges, falls) touch water on both sides;
+    # count dark pixels next to water as water, so a river stays whole even where it's still
+    # connected around the stroke. Dark outline clumps further inland stay land.
+    near_water = cv2.dilate((land == 0).astype(np.uint8), DISK(kernel(STROKE_NEAR_M, px_m))) > 0
+    land[(im.mean(-1) < STROKE_DARK) & near_water & ~void] = 0
     # Only a light cleanup, so swamp channels, inlets and islets keep their shape; water
     # closed over here (1-2px channels) comes back below as river centre lines.
-    land = cv2.morphologyEx(land, cv2.MORPH_OPEN, DISK(kernel(LAND_SPECK_PX, kc)))
+    land = cv2.morphologyEx(land, cv2.MORPH_OPEN, DISK(kernel(LAND_SPECK_M, px_m)))
     land = cv2.morphologyEx(land, cv2.MORPH_CLOSE, DISK(kernel(WATER_SPECK_PX, kc)))
-    land = drop_strokes(land, DISK(kernel(STROKE_PX)))
+    land = drop_strokes(land, DISK(kernel(STROKE_M, px_m)))
+    # Off-map areas inside the land (the Grass Fields pit) count as land for tracing, so a river
+    # running into one ends at its edge rather than making it part of a lake; the void covers it.
+    n, comp = cv2.connectedComponents(void.astype(np.uint8), connectivity=8)
+    edge = np.unique(np.r_[comp[0], comp[-1], comp[:, 0], comp[:, -1]])
+    land[void & ~np.isin(comp, edge)] = 255
 
     # Every land/water edge: outer rings are coast (islands included), holes are enclosed
     # water (lakes, and rivers wide enough to show both banks).
@@ -286,9 +308,9 @@ def main() -> None:
         m = np.zeros((h, w), np.uint8); cv2.drawContours(m, [c], -1, 1, cv2.FILLED)
         return void[m > 0].mean() > 0.5
     lake_rings = [c for c in lake_rings if not mostly_void(c)]
-    void_mask = cv2.morphologyEx((void * 255).astype(np.uint8), cv2.MORPH_OPEN, DISK(kernel(LAND_SPECK_PX, kc)))
+    void_mask = cv2.morphologyEx((void * 255).astype(np.uint8), cv2.MORPH_OPEN, DISK(kernel(LAND_SPECK_M, px_m)))
     vcont, _ = cv2.findContours(void_mask, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE)
-    void_rings = [c for c in vcont if cv2.contourArea(c) >= area(MIN_LAKE_PX)]
+    void_rings = [c for c in vcont if cv2.contourArea(c) >= area(MIN_ISLAND_PX)]
 
     # Rivers: water the land mask swallowed because it's too thin to show two banks.
     # A 1-2px channel blends with the land beside it, so it gets a looser colour test, and

@@ -98,9 +98,8 @@ is in [DESIGN.md](DESIGN.md).
   [ELK](https://eclipse.dev/elk/).
 - Default node data is derived from the game's map data, via
   [valentinps/satisfactorymap](https://github.com/valentinps/satisfactorymap).
-- The coastline, lake and river wireframe on the Nodes map is traced from the game's map as shown
-  on the [Satisfactory Wiki](https://satisfactory.wiki.gg/wiki/Biomes). The images aren't
-  included; only the simplified lines are.
+- The coastline, lake and river wireframe on the Nodes map is traced from the game's own map
+  textures. The images aren't included; only the simplified lines are.
 - The biome regions on the Nodes map are traced from the
   [Satisfactory Wiki](https://satisfactory.wiki.gg/wiki/Biomes)'s biome map (CC BY-NC-SA 4.0).
 
@@ -112,7 +111,8 @@ Satisfactory and its game data are © Coffee Stain Studios.
 The code is licensed under the [MIT License](LICENSE).
 
 **Game data is not covered by this license.** The node catalog in `src/gamedata/data/` and the
-map wireframe in `app/ui/map-outline.json` and `app/ui/map-sea.png` (traced from the game's map) are derived from game
+map wireframe, terrain and heights in `app/ui/map-outline.json`, `app/ui/map-sea.png`,
+`app/ui/map-terrain.json` and `app/ui/map-height.png` (traced from the game's map and height map) are derived from game
 data © Coffee Stain Studios, included with attribution for use by this planner. They will be
 removed if Coffee Stain Studios asks.
 

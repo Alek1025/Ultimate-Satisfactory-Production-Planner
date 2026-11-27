@@ -269,11 +269,18 @@ ul.plain { list-style: none; margin: 0; padding: 0; }
 .map-scroll.map-sea { background-color: #07080a; background-image: none; }
 .map-outline .map-land { fill: var(--canvas); fill-rule: evenodd; stroke: none; }
 .map-grain { position: absolute; inset: 0; pointer-events: none; }
+.map-cursor { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 4px; background: rgba(13, 15, 18, .82); border: 1px solid var(--border); color: var(--muted); font-size: 12px; line-height: 18px; pointer-events: none; }
+.map-cursor[hidden] { display: none; }
 .map-outline .map-void { fill: #07080a; fill-rule: evenodd; stroke: none; }
 .map-outline .map-coast { stroke: #4a5058; }
 .map-outline .map-lake { stroke: #35596b; }
 .map-outline .map-river { stroke: #35596b; }
 /* Pieces overlap their neighbours slightly so borders meet; the layer fades as a whole, so overlaps don't show. */
+/* Height contours (stronger every 100 m), under the coast. */
+.map-terrain { pointer-events: none; }
+.map-terrain path { fill: none; stroke-width: 1; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.map-terrain .map-contour { stroke: #262b31; }
+.map-terrain .map-contour-major { stroke: #353b43; }
 .map-biomes { opacity: .24; }
 .map-biomes path { stroke: none; }
 .map-biome-labels { pointer-events: none; }

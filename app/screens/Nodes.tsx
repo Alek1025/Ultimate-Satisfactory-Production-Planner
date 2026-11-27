@@ -7,6 +7,7 @@ import type { MapNode } from '../engine/protocol';
 import outline from '../ui/map-outline.json';
 import biomeMap from '../ui/map-biomes.json';
 import seaGlowUrl from '../ui/map-sea.png';
+import heightUrl from '../ui/map-height.png';
 
 const MULT = { impure: 0.5, normal: 1, pure: 2 } as const;
 const PURITIES = ['pure', 'normal', 'impure'] as const;
@@ -14,6 +15,50 @@ const VIEW_W = 1000;
 const MIN_ZOOM = 0.25;
 const DRAG_THRESHOLD = 4; // px a press may move and still count as a click
 const MAX_ZOOM = 4;
+const MINOR_CONTOUR_ZOOM = 1.5;
+// Ground height grid (scripts/build-heightmap.py): world-aligned over the game map's square, each
+// pixel Z + 1000 m as 16 bits (red high byte, green low), 0 off the map.
+const HEIGHT_WORLD = { x0: -3246.98832, x1: 4253.01832, y0: -3750, y1: 3750 }; // metres
+type HeightGrid = { size: number; z: Uint16Array };
+let heightGrid: Promise<HeightGrid | null> | null = null;
+function loadHeights(): Promise<HeightGrid | null> {
+  heightGrid ??= (async () => {
+    try {
+      const bmp = await createImageBitmap(await (await fetch(heightUrl)).blob(), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+      const c = document.createElement('canvas');
+      c.width = bmp.width; c.height = bmp.height;
+      const g = c.getContext('2d', { willReadFrequently: true });
+      if (!g) return null;
+      g.drawImage(bmp, 0, 0);
+      const d = g.getImageData(0, 0, bmp.width, bmp.height).data;
+      const z = new Uint16Array(bmp.width * bmp.height);
+      for (let i = 0; i < z.length; i++) z[i] = (d[i * 4]! << 8) | d[i * 4 + 1]!;
+      return { size: bmp.width, z };
+    } catch { return null; } // the readout just leaves the height out
+  })();
+  return heightGrid;
+}
+/** Ground height in metres at world (x, y) metres, or null off the map. */
+function heightAt(h: HeightGrid, x: number, y: number): number | null {
+  const i = Math.floor(((x - HEIGHT_WORLD.x0) / (HEIGHT_WORLD.x1 - HEIGHT_WORLD.x0)) * h.size);
+  const j = Math.floor(((y - HEIGHT_WORLD.y0) / (HEIGHT_WORLD.y1 - HEIGHT_WORLD.y0)) * h.size);
+  if (i < 0 || j < 0 || i >= h.size || j >= h.size) return null;
+  const v = h.z[j * h.size + i]!;
+  return v ? v - 1000 : null;
+}
+
+type Geo = { s: number; minX: number; minY: number; h: number };
+/** SVG path data, in map units, for flat [x0, y0, x1, y1, ...] lines in metres. */
+function svgPath(geo: Geo, lines: number[][], closed: boolean): string {
+  const X = (m: number) => ((m * 100 - geo.minX) * geo.s).toFixed(1);
+  const Y = (m: number) => ((m * 100 - geo.minY) * geo.s).toFixed(1);
+  return lines.map((r) => {
+    let d = `M${X(r[0]!)} ${Y(r[1]!)}`;
+    for (let i = 2; i < r.length; i += 2) d += `L${X(r[i]!)} ${Y(r[i + 1]!)}`;
+    return closed ? `${d}Z` : d;
+  }).join('');
+}
+
 // Faint screen-space grain over the map, so the dark sea glow's 8-bit steps don't show as bands.
 const GRAIN = (() => {
   try {
@@ -50,6 +95,9 @@ export function NodesScreen() {
   const [cam, setCam] = useState({ x: 0, y: 0, zoom: 1 });
   const zoom = cam.zoom;
   const svgRef = useRef<SVGSVGElement>(null);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const heights = useRef<HeightGrid | null>(null);
+  useEffect(() => { void loadHeights().then((h) => { heights.current = h; }); }, []);
   const viewport = useRef<HTMLDivElement>(null);
   // Left-drag pans the map; right-drag box-selects. A left press that doesn't move past DRAG_THRESHOLD is a click.
   const pan = useRef<{ id: number; x: number; y: number; cx: number; cy: number; moved: boolean } | null>(null);
@@ -98,11 +146,7 @@ export function NodesScreen() {
     if (!geo) return null;
     const X = (m: number) => ((m * 100 - geo.minX) * geo.s).toFixed(1);
     const Y = (m: number) => ((m * 100 - geo.minY) * geo.s).toFixed(1);
-    const path = (lines: number[][], closed: boolean) => lines.map((r) => {
-      let d = `M${X(r[0]!)} ${Y(r[1]!)}`;
-      for (let i = 2; i < r.length; i += 2) d += `L${X(r[i]!)} ${Y(r[i + 1]!)}`;
-      return closed ? `${d}Z` : d;
-    }).join('');
+    const path = (lines: number[][], closed: boolean) => svgPath(geo, lines, closed);
     const coast = path(outline.coast, true); const lakes = path(outline.lakes, true);
     // Land is coast and lake rings together, filled even-odd: lakes cut holes, and islands
     // inside lakes fill again. The sea is the map box's background.
@@ -116,6 +160,25 @@ export function NodesScreen() {
   }, [geo]);
   const [showOutline, setShowOutline] = useState(true);
   const [showBiomes, setShowBiomes] = useState(false);
+  const [showContours, setShowContours] = useState(true);
+
+  // Height contours (scripts/trace-map-terrain.py). It's the biggest map file, so it loads in its
+  // own chunk when the map first shows it.
+  const [terrain, setTerrain] = useState<typeof import('../ui/map-terrain.json') | null>(null);
+  useEffect(() => {
+    if (!showContours || terrain) return;
+    let live = true;
+    void import('../ui/map-terrain.json').then((m) => { if (live) setTerrain(m.default); });
+    return () => { live = false; };
+  }, [showContours, terrain]);
+  const terrainPaths = useMemo(() => {
+    if (!geo || !terrain) return null;
+    const step = 100; // stronger line every 100 m
+    // Already cut to the land by the script, so no clip path (clipping this many points is slow).
+    const minor = terrain.contours.filter((c) => c.z % step !== 0).flatMap((c) => c.lines);
+    const major = terrain.contours.filter((c) => c.z % step === 0).flatMap((c) => c.lines);
+    return { minor: svgPath(geo, minor, false), major: svgPath(geo, major, false) };
+  }, [geo, terrain]);
 
   const resources = useMemo(() => {
     const m = new Map<string, MapNode[]>();
@@ -152,7 +215,19 @@ export function NodesScreen() {
     if (e.button !== 0) return;
     pan.current = { id: e.pointerId, x: e.clientX, y: e.clientY, cx: cam.x, cy: cam.y, moved: false };
   };
+  // Cursor position readout, in world metres. Written straight to the DOM so moving the mouse doesn't re-render the map.
+  const showCursor = (e: RPointerEvent<HTMLDivElement> | null) => {
+    const el = cursorRef.current;
+    if (!el) return;
+    if (!e) { el.hidden = true; return; }
+    const p = toSvg(e);
+    const x = (p.x / geo.s + geo.minX) / 100, y = (p.y / geo.s + geo.minY) / 100;
+    const z = heights.current && heightAt(heights.current, x, y);
+    el.textContent = `X ${num(x, 0)} · Y ${num(y, 0)}${z == null ? '' : ` · Z ${num(z, 0)}`} m`;
+    el.hidden = false;
+  };
   const onPanMove = (e: RPointerEvent<HTMLDivElement>) => {
+    showCursor(e);
     const pn = pan.current;
     if (!pn || pn.id !== e.pointerId) return;
     if (!(e.buttons & 1)) { pan.current = null; setPanning(false); return; } // released outside the map
@@ -235,6 +310,7 @@ export function NodesScreen() {
             <div className="row" style={{ marginLeft: 'auto', gap: 6 }}>
               <button type="button" className="chip" aria-pressed={showOutline} onClick={() => setShowOutline(!showOutline)}>Coastline</button>
               <button type="button" className="chip" aria-pressed={showBiomes} onClick={() => setShowBiomes(!showBiomes)}>Biomes</button>
+              <button type="button" className="chip" aria-pressed={showContours} onClick={() => setShowContours(!showContours)}>Contours</button>
               <button type="button" className="btn btn-sm" aria-label="Zoom out" disabled={zoom <= MIN_ZOOM} onClick={() => zoomTo(zoom - 0.25)}>−</button>
               <span className="mono" style={{ minWidth: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
               <button type="button" className="btn btn-sm" aria-label="Zoom in" disabled={zoom >= MAX_ZOOM} onClick={() => zoomTo(zoom + 0.25)}>+</button>
@@ -242,7 +318,7 @@ export function NodesScreen() {
             </div>
           </div>
           <div ref={viewportRef} className={`map-scroll${showOutline ? ' map-sea' : ''} map-pan${panning ? ' panning' : ''}`} style={{ aspectRatio: `${VIEW_W} / ${geo.h}` }}
-            onPointerDown={onPanDown} onPointerMove={onPanMove} onPointerUp={onPanUp} onPointerCancel={onPanUp}
+            onPointerDown={onPanDown} onPointerMove={onPanMove} onPointerUp={onPanUp} onPointerCancel={onPanUp} onPointerLeave={() => showCursor(null)}
             onClickCapture={onPanClick} onContextMenu={(e) => e.preventDefault()}>
             <div style={{ position: 'absolute', left: 0, top: 0, width: `${zoom * 100}%`, transform: `translate(${cam.x}px, ${cam.y}px)`, transformOrigin: '0 0' }}>
               <svg ref={svgRef} viewBox={`0 0 ${VIEW_W} ${geo.h}`} className="node-map" role="img" style={{ overflow: 'visible' }}
@@ -255,10 +331,17 @@ export function NodesScreen() {
                     <path d={outlinePaths.land} className="map-land" />
                   </g>
                 )}
+                {outlinePaths && <defs><clipPath id="map-land-clip"><path d={outlinePaths.land} clipRule="evenodd" /></clipPath></defs>}
                 {showBiomes && outlinePaths && (
                   <g className="map-biomes" clipPath="url(#map-land-clip)">
-                    <defs><clipPath id="map-land-clip"><path d={outlinePaths.land} clipRule="evenodd" /></clipPath></defs>
                     {outlinePaths.biomes.map((b) => <path key={b.name} d={b.d} fill={b.color}><title>{b.name}</title></path>)}
+                  </g>
+                )}
+                {terrainPaths && showContours && (
+                  <g aria-hidden="true" className="map-terrain">
+                    {/* The 25 m lines only once zoomed in; zoomed out they'd merge into a haze and cost the most to draw. */}
+                    {zoom >= MINOR_CONTOUR_ZOOM && <path d={terrainPaths.minor} className="map-contour" />}
+                    <path d={terrainPaths.major} className="map-contour map-contour-major" />
                   </g>
                 )}
                 {showOutline && outlinePaths && (
@@ -299,6 +382,7 @@ export function NodesScreen() {
               </svg>
             </div>
             {showOutline && GRAIN && <div className="map-grain" style={{ backgroundImage: GRAIN }} aria-hidden="true" />}
+            <div ref={cursorRef} className="map-cursor mono" hidden aria-hidden="true" />
           </div>
           <div className="row" style={{ marginTop: 10, minHeight: 44 }}>
             {sel.length > 0 ? (
