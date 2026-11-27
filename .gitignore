@@ -9,3 +9,6 @@ fixtures/*
 .vscode/
 scripts/map-sources/*
 !scripts/map-sources/README.md
+__pycache__/
+*.pyc
+.claude/settings.local.json
