@@ -20,7 +20,38 @@
       "PowerShell(npm run build:app)",
       "PowerShell(git status *)",
       "PowerShell(git diff *)",
-      "PowerShell(git log *)"
+      "PowerShell(git log *)",
+      "Bash(npm run lint)",
+      "Bash(npm run lint *)",
+      "PowerShell(npm run lint)",
+      "PowerShell(npm run lint *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/lint-edited-file.mjs\"",
+            "timeout": 60,
+            "statusMessage": "Linting edited file"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/typecheck-before-stop.mjs\"",
+            "timeout": 120,
+            "statusMessage": "Typechecking changes"
+          }
+        ]
+      }
     ]
   }
 }

@@ -5,7 +5,7 @@ import { summarizeSave, summarizeSaveBytes, checkVersion } from '../src/save/ext
 import { SaveFormatError } from '../src/save/binary-reader';
 import { resolveNodes, parseNodeCatalog } from '../src/gamedata/node-catalog';
 import type { SaveSummary } from '../src/save/summary-types';
-import { fixture, gameData, SAVES, PRESENT_SAVES, hasFixture } from './fixtures';
+import { fixture, gameData, PRESENT_SAVES, hasFixture } from './fixtures';
 
 describe.each(Object.entries(PRESENT_SAVES))('save fixture %s', (file, exp) => {
   const bytes = fixture(file);
