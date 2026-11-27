@@ -9,10 +9,14 @@ the best factory with an LP solver (HiGHS, WebAssembly). Everything runs locally
 npm run dev          # Vite dev server, http://localhost:4173
 npm test             # Vitest (parser, solver, plans, graph)
 npm run typecheck    # tsc for src/ and app/
+npm run lint         # ESLint (bug-catching rules only; no formatter, keep the existing style)
 npm run build:app    # typecheck + build into dist-app/
 npm run summary -- fixtures/en-US.json fixtures/<save>.sav
 npm run plan -- fixtures/en-US.json fixtures/<save>.sav '<request json>'
 ```
+
+Hooks in `.claude/settings.json`: each edited `.ts`/`.tsx`/`.mjs` file is linted right away, and
+before a turn ends `npm run typecheck` runs if TypeScript files have uncommitted changes.
 
 Before calling work done, run `npm run typecheck` and `npm test`.
 

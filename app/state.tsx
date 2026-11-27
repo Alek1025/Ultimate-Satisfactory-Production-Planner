@@ -95,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [patch]);
 
   /** Point the engine at a summary (if not already) and record it as the active save. */
-  const useSummary = useCallback(async (s: SaveSummary) => {
+  const applySummary = useCallback(async (s: SaveSummary) => {
     const key = summaryKey(s);
     if (stateRef.current.problem?.summaryKey === key) return;
     const r = await engine.request<'problem'>({ type: 'useSummary', summary: s });
@@ -107,8 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ plan, planLoadErrors: [], solveError: undefined });
     await store.current?.setActivePlanId(plan.id);
     const s = await store.current?.getSummary(plan.save.summaryKey);
-    if (s && stateRef.current.docs) await useSummary(s);
-  }, [patch, useSummary]);
+    if (s && stateRef.current.docs) await applySummary(s);
+  }, [patch, applySummary]);
 
   // ---- Boot
   useEffect(() => {
@@ -141,7 +141,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (lp.plan) {
           const s = await ps.getSummary(lp.plan.save.summaryKey);
           if (s) {
-            await useSummary(s);
+            await applySummary(s);
             patch({ plan: lp.plan, saveLoad: { phase: s.version.status === 'warning' ? 'warn' : 'done', fileName: s.source.saveName } });
             restored = true;
           }
@@ -151,14 +151,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const key = await platform.store.get<string>(KEY_SUMMARY);
         const s = key ? await ps.getSummary(key) : undefined;
         if (s) {
-          await useSummary(s);
+          await applySummary(s);
           patch({ saveLoad: { phase: s.version.status === 'warning' ? 'warn' : 'done', fileName: s.source.saveName } });
         }
       }
       if (!cancelled) patch({ booting: false });
     })().catch((e) => patch({ booting: false, fatal: { kind: 'other', message: 'The planner couldn’t start', detail: String(e?.stack ?? e) } }));
     return () => { cancelled = true; };
-  }, [engine, patch, useSummary]);
+  }, [engine, patch, applySummary]);
 
   // ---- Loading files
   const loadDocs = useCallback<Api['loadDocs']>(async (file) => {
@@ -274,7 +274,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patch({ solving: true, solveError: undefined });
     try {
       const s = await store.current!.getSummary(p.save.summaryKey);
-      if (s) await useSummary(s);
+      if (s) await applySummary(s);
       await store.current!.putPlan(p, { touch: true });
       const r = await engine.request<'solved'>({ type: 'solve', request: p.request, options: p.solveOptions });
       const saved = await store.current!.recordResult(p.id, r.result);
@@ -283,7 +283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       patch({ solving: false, solveError: e as EngineError });
     }
-  }, [engine, patch, refreshPlans, useSummary]);
+  }, [engine, patch, refreshPlans, applySummary]);
 
   const layout = useCallback<Api['layout']>((graph) => layoutGraph(graph), []);
 
