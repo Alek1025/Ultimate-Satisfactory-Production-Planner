@@ -1,6 +1,8 @@
 // Stop hook: if TypeScript files have uncommitted changes, run the typecheck before the
 // agent may finish. Exit 2 makes the agent keep going and fix the errors.
 import { execSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const input = JSON.parse(await new Promise((resolve) => {
   let s = '';
@@ -10,6 +12,13 @@ const input = JSON.parse(await new Promise((resolve) => {
 if (input.stop_hook_active) process.exit(0);
 
 const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+// No root package with a typecheck script yet (e.g. between the v1 archive and the rewrite).
+const pkgPath = join(root, 'package.json');
+if (!existsSync(pkgPath)) process.exit(0);
+try {
+  if (!JSON.parse(readFileSync(pkgPath, 'utf8')).scripts?.typecheck) process.exit(0);
+} catch { process.exit(0); }
+
 let changed = '';
 try { changed = execSync('git status --porcelain', { cwd: root, encoding: 'utf8' }); } catch { process.exit(0); }
 if (!/\.(ts|tsx)$/m.test(changed)) process.exit(0);

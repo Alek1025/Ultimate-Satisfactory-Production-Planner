@@ -7,8 +7,9 @@ fixtures/*
 *.sav
 .env*
 .vscode/
-scripts/map-sources/*
-!scripts/map-sources/README.md
+archive/v1/scripts/map-sources/*
+!archive/v1/scripts/map-sources/README.md
 __pycache__/
 *.pyc
 .claude/settings.local.json
+archive/v1/fixtures

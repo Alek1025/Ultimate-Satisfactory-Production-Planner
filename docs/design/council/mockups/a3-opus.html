@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=1480">
+<title>World Architect Mockup</title>
+<style>
+.theme-dark{--bg:#0e1822;--panel:#142231;--panel-2:#1a2b3c;--line:#263a4d;--ink:#e6eef5;--muted:#8ea3b5;--accent:#5cc8e6;--ok:#4fd1a5;--warn:#f0b450;--bad:#ff6b5e;--plan:#7f97ab;color-scheme:dark}
+.theme-light{--bg:#f3efe4;--panel:#fffdf6;--panel-2:#f7f3e8;--line:#dcd5c4;--ink:#1d2a30;--muted:#66727a;--accent:#1f6f8b;--ok:#2e8b6a;--warn:#b7791f;--bad:#c8463b;--plan:#9aa6ad;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;padding:28px 0;background:#3a3f44;font-family:system-ui,"Segoe UI",sans-serif}
+.cap{width:1440px;margin:0 auto 8px;color:#e8edf1;font:12px ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase}
+.frame{width:1440px;height:900px;margin:0 auto 44px;display:grid;grid-template-rows:48px 852px;grid-template-columns:180px 840px 420px;
+  background:var(--bg);color:var(--ink);font-size:14px;line-height:1.4;overflow:hidden;outline:1px solid var(--line);position:relative}
+.num,.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.micro{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.mut{color:var(--muted)} .ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)} .acc{color:var(--accent)}
+h2{font-size:18px;margin:4px 0 6px;font-weight:600} h1{font-size:26px;margin:0;font-weight:600}
+.big{font-size:30px;font-weight:600;line-height:1.1}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel-2);font-size:12px;white-space:nowrap;color:var(--ink)}
+.chip.num{font-size:12px}
+.ev{font:600 12px ui-monospace,Consolas,monospace;letter-spacing:.04em;height:20px;padding:0 6px;background:transparent}
+.ev.obs{color:var(--ok);border-color:var(--ok)} .ev.der{color:var(--accent);border-color:var(--accent)}
+.ev.inf{color:var(--warn);border-color:var(--warn)} .ev.na{color:var(--muted);border:1px dashed var(--muted)}
+.layer{font-size:12px;letter-spacing:.08em;height:20px;padding:0 6px;color:var(--muted);text-transform:uppercase}
+.conflict{color:var(--bad);border-color:var(--bad);font-size:12px;letter-spacing:.06em;height:20px;padding:0 6px;text-transform:uppercase}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:var(--ok)}
+/* top bar */
+.top{grid-row:1;grid-column:1/-1;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+.top .app{font-weight:600;font-size:15px} .sep{width:1px;height:24px;background:var(--line);margin:0 4px} .grow{flex:1}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden} .seg b{padding:2px 9px;font-weight:400;color:var(--muted)} .seg b.on{background:var(--panel-2);color:var(--ink)}
+.btn{height:32px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);font:500 14px system-ui,"Segoe UI",sans-serif}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--bg);font-weight:600}
+.btn.bad{border-color:var(--bad);color:var(--bad);background:transparent}
+/* rail */
+.rail{grid-row:2;grid-column:1;background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 10px;gap:4px}
+.pblock{padding:6px 8px 14px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.pblock .pname{font-weight:600;font-size:15px;margin-top:2px}
+.nav{display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;color:var(--muted)}
+.nav svg{width:18px;height:18px;flex:none} .nav.on{background:var(--panel-2);color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
+.rfoot{margin-top:auto;border-top:1px solid var(--line);padding:10px 8px 2px;display:flex;flex-direction:column;gap:3px;font-size:14px}
+.collapse{color:var(--muted);font-size:12px;padding:4px 8px}
+/* main map */
+.main{grid-row:2;grid-column:2;position:relative;overflow:hidden}
+.main canvas,.main svg.ov{position:absolute;left:0;top:0;width:840px;height:852px}
+.card{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.22)}
+.card .row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.cb{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:3px;display:inline-block} .cb.on{background:var(--accent);border-color:var(--accent)}
+.tag{position:absolute;right:12px;font:12px ui-monospace,Consolas,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px 8px}
+.scrub{position:absolute;left:0;right:0;bottom:0;height:72px;background:var(--panel);border-top:1px solid var(--line);padding:8px 16px;display:grid;grid-template-columns:120px 1fr 150px;gap:14px;align-items:center}
+.track{position:relative;height:40px}
+.ph{position:absolute;top:0;height:40px;border:1px solid var(--line);border-radius:8px;padding:3px 8px;background:var(--panel-2);font-size:14px;overflow:hidden;white-space:nowrap}
+.ph.on{border-color:var(--accent);box-shadow:inset 0 -3px 0 var(--accent)}
+.ph .micro{font-size:12px;line-height:1.2}
+/* inspector */
+.insp{grid-row:2;grid-column:3;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;overflow:hidden}
+.ih{padding:14px 18px 10px;border-bottom:1px solid var(--line)}
+.sec{padding:9px 18px;border-bottom:1px solid var(--line)}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl td,.tbl th{padding:4px 4px;border-bottom:1px solid var(--line);text-align:left}
+.tbl th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500}
+.tbl td.r,.tbl th.r{text-align:right}
+.bar{height:10px;border-radius:5px;background:var(--panel-2);border:1px solid var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:5px}
+.brow{display:grid;grid-template-columns:62px 1fr 92px;gap:10px;align-items:center;margin:6px 0}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;margin:8px 0 6px}
+.stepper b{width:30px;text-align:center;color:var(--muted);font-weight:400} .stepper span{padding:4px 12px;border-left:1px solid var(--line);border-right:1px solid var(--line)}
+/* redline */
+.strip{position:absolute;left:0;right:0;top:0;height:86px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:stretch;padding:8px 10px;gap:6px}
+.snap{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--panel-2);display:flex;flex-direction:column;justify-content:space-between}
+.snap.on{border-color:var(--bad);box-shadow:inset 0 -3px 0 var(--bad)} .snap.base{border-style:dashed}
+.vgrp{padding:5px 18px 0;display:flex;justify-content:space-between}
+.vrow{display:grid;grid-template-columns:26px 1fr;gap:8px;padding:4px 18px;border-bottom:1px solid var(--line)}
+.vrow.on{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--bad)}
+.badge{width:22px;height:22px;border-radius:50%;background:var(--bad);color:var(--bg);font:700 12px ui-monospace,Consolas,monospace;display:flex;align-items:center;justify-content:center}
+.badge.na{background:transparent;color:var(--muted);border:1.5px dashed var(--muted)}
+.vnum{display:grid;grid-template-columns:1fr 1fr 70px auto;gap:6px;font-size:14px;margin-top:2px;align-items:center}
+.drawer{margin-top:auto;border-top:2px solid var(--line);background:var(--panel-2);padding:8px 18px 12px}
+.step{display:grid;grid-template-columns:16px 1fr;gap:10px;position:relative;padding-bottom:7px}
+.step:before{content:"";position:absolute;left:7px;top:16px;bottom:0;width:2px;background:var(--line)} .step:last-of-type:before{display:none}
+.step i{width:16px;height:16px;border-radius:50%;border:2px solid var(--muted);background:var(--panel-2);margin-top:2px}
+.note{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 10px;color:var(--muted);background:var(--panel)}
+</style></head><body>
+
+<div class="cap">Mockup — Opus R3 · Frame 1 · Atlas · Dark (blueprint slate) · pipe corridor selected</div>
+<section class="frame theme-dark" id="f1" data-nav="Atlas">
+ <main class="main"><canvas width="840" height="852"></canvas><svg class="ov" viewBox="0 0 840 852"></svg>
+  <div class="card layers" style="left:12px;top:12px;width:206px"></div>
+  <div class="card legend" style="right:12px;top:12px;width:212px"></div>
+  <div class="tag" style="bottom:84px">Mockup — Opus R3</div>
+  <div class="scrub"></div>
+ </main>
+ <aside class="insp">
+  <div class="ih"><div class="micro">Corridor · Pipe · C3</div>
+   <h2>Crude Oil · RD Wells → Spire Coast</h2>
+   <div class="row"><span class="chip layer">Manual route</span><span class="chip ev der">DER</span><span class="mut">4 waypoints · 1.42 km · 3 pumps · 1 tunnel</span></div></div>
+  <div class="sec"><div class="sh"><span class="micro">Throughput budget</span><span class="mut">drag needle or type</span></div>
+   <div class="row" style="flex-wrap:nowrap;gap:14px"><svg id="dial" width="220" height="122" viewBox="0 0 220 122"></svg>
+    <div><div class="big num">540</div><div class="mut">m³/min budget</div>
+     <div class="stepper"><b>−</b><span class="num">540</span><b>+</b></div>
+     <div>Cap <b class="num">600</b> <span class="mut">Mk2 · 90%</span></div></div></div></div>
+  <div class="sec"><div class="sh"><span class="micro">Lift profile · head per pump</span><span class="chip ev der">DER · heightmap 64 samples</span></div>
+   <svg id="spark" width="384" height="96" viewBox="0 0 384 96"></svg>
+   <table class="tbl"><tr><th>Head</th><th>To</th><th class="r">Rise</th><th class="r">Limit</th><th></th></tr>
+    <tr><td>P1 Mk2</td><td class="mut">P2 · 0.62 km</td><td class="r num">+38 m</td><td class="r num">50 m</td><td class="ok">✓</td></tr>
+    <tr><td>P2 Mk1</td><td class="mut">P3 · 1.05 km</td><td class="r num">+17 m</td><td class="r num">20 m</td><td class="warn">85%</td></tr>
+    <tr><td>P3 Mk2</td><td class="mut">Outlet · 1.42 km</td><td class="r num">+9 m</td><td class="r num">50 m</td><td class="ok">✓</td></tr></table></div>
+  <div class="sec"><div class="sh"><span class="micro">Need · cap · source (Phase 3)</span><span class="ok">Headroom 60 m³/min</span></div>
+   <div class="brow"><span>Need</span><div class="bar"><i style="width:90%;background:var(--accent)"></i></div><span class="num">540 <span class="chip ev der">DER</span></span></div>
+   <div class="brow"><span>Cap</span><div class="bar"><i style="width:100%;background:var(--muted)"></i></div><span class="num">600 <span class="chip layer" style="padding:0 4px">MK2</span></span></div>
+   <div class="brow"><span>Source</span><div class="bar"><i style="width:100%;background:var(--ok)"></i></div><span class="num">600 <span class="chip ev obs">OBS</span></span></div>
+   <div class="mut">Source: well RD-03 pure, extractor at 250% in autosave_2</div></div>
+  <div class="sec" style="border:0"><div class="sh"><span class="micro">Sensitivity · last Draft allocation</span><span class="num mut">solve 8e21…c0</span></div>
+   <table class="tbl"><tr><td>Allocation unchanged for budgets</td><td class="r num">486 – 600</td></tr>
+    <tr><td>Below 486: Plastic toward Phase 3 goal</td><td class="r num">−0.67 / m³</td></tr>
+    <tr><td>Binding above 600</td><td class="r">Mk2 cap, then well</td></tr></table></div>
+ </aside>
+</section>
+
+<div class="cap">Mockup — Opus R3 · Frame 2 · Atlas · Light (topographic vellum) · site selected</div>
+<section class="frame theme-light" id="f2" data-nav="Atlas">
+ <main class="main"><canvas width="840" height="852"></canvas><svg class="ov" viewBox="0 0 840 852"></svg>
+  <div class="card layers" style="left:12px;top:12px;width:206px"></div>
+  <div class="card legend" style="right:12px;top:12px;width:212px"></div>
+  <div class="tag" style="bottom:84px">Mockup — Opus R3</div>
+  <div class="scrub"></div>
+ </main>
+ <aside class="insp">
+  <div class="ih"><div class="micro">Site · Black box · S2</div><h2>Spire Coast Refinery</h2>
+   <div class="row"><span class="chip layer">Manual</span><span class="mut">Contents not modeled · 12 Refineries declared</span></div></div>
+  <div class="sec"><div class="sh"><span class="micro">Ports</span><span class="mut">Phase 3 rates</span></div>
+   <table class="tbl"><tr><th></th><th>Item</th><th class="r">Rate</th><th>Corridor</th><th></th></tr>
+    <tr><td class="acc">IN</td><td>Crude Oil</td><td class="r num">540 m³</td><td class="mut">C3 pipe</td><td><span class="chip ev obs">OBS</span></td></tr>
+    <tr><td class="acc">IN</td><td>Water</td><td class="r num">300 m³</td><td class="mut">C4 pipe</td><td><span class="chip ev na">N/A</span></td></tr>
+    <tr><td class="ok">OUT</td><td>Plastic</td><td class="r num">360</td><td class="mut">C5 belt</td><td><span class="chip ev der">DER</span></td></tr>
+    <tr><td class="ok">OUT</td><td>Rubber</td><td class="r num">240</td><td class="mut">C5 belt</td><td><span class="chip ev der">DER</span></td></tr>
+    <tr><td class="ok">OUT</td><td>Heavy Oil Res.</td><td class="r num">0</td><td class="mut">sunk inside</td><td><span class="chip ev inf">INF</span></td></tr></table>
+   <div class="mut" style="margin-top:6px">C5 carries 600 of 780/min (Mk5 belt)</div></div>
+  <div class="sec"><div class="sh"><span class="micro">Power draw vs circuit</span><span class="num">C2 · Dune Coal</span></div>
+   <div class="bar" style="height:16px"><i style="width:55%;background:var(--accent)"></i><i style="left:55%;width:25%;background:var(--plan)"></i></div>
+   <div class="row" style="justify-content:space-between;margin-top:6px"><span><b class="num">412 MW</b> this site</span><span class="mut num">+188 other</span><span class="num">600 / 750 MW</span></div>
+   <div class="mut">Circuit is fuel-bound: 4 Coal Generators, coal 60/min, 8 km to supply</div></div>
+  <div class="sec"><div class="sh"><span class="micro">Nodes claimed</span><span class="mut">2 of 2 in Rocky Desert</span></div>
+   <table class="tbl"><tr><td>RD-03 Crude Oil</td><td>pure</td><td class="r num">600 @250%</td><td><span class="chip layer">Observed</span></td></tr>
+    <tr><td>RD-07 Crude Oil</td><td>normal</td><td class="r num">reserved P4</td><td><span class="chip layer">Catalog</span></td></tr></table></div>
+  <div class="sec" style="border:0"><div class="sh"><span class="micro">Phase deliveries</span><span class="mut">per min</span></div>
+   <table class="tbl"><tr><th>Phase</th><th class="r">Plastic</th><th class="r">Rubber</th><th class="r">Crude in</th></tr>
+    <tr><td>1 Foundations</td><td class="r num mut">—</td><td class="r num mut">—</td><td class="r num mut">—</td></tr>
+    <tr><td>2 Oil &amp; Plastic</td><td class="r num">120</td><td class="r num">120</td><td class="r num">240</td></tr>
+    <tr style="background:var(--panel-2)"><td><b>3 Computers</b></td><td class="r num">360</td><td class="r num">240</td><td class="r num">540</td></tr>
+    <tr><td>4 Elevator 4</td><td class="r num">480</td><td class="r num">240</td><td class="r num">720</td></tr></table>
+   <div class="mut" style="margin-top:6px">Phase 4 crude in exceeds C3 cap 600: <span class="bad">infeasible as charted</span></div></div>
+ </aside>
+</section>
+
+<div class="cap">Mockup — Opus R3 · Frame 3 · Redline · Dark · main@r41 vs autosave_2 · facts only</div>
+<section class="frame theme-dark" id="f3" data-nav="Redline">
+ <main class="main"><canvas width="840" height="852"></canvas><svg class="ov" viewBox="0 0 840 852"></svg>
+  <div class="strip"><div style="width:118px;display:flex;flex-direction:column;justify-content:center"><div class="micro">Survey</div><div>since <span class="num">r41</span></div><div class="mut">6 autosaves</div></div></div>
+  <div class="card" style="left:300px;bottom:12px;width:250px">
+   <div class="micro">Redline legend</div>
+   <div class="row" style="margin-top:6px"><svg width="34" height="10"><path d="M2 5H32" style="stroke:var(--plan);stroke-width:3;stroke-dasharray:6 5"/></svg>As designed · main@r41</div>
+   <div class="row"><svg width="34" height="10"><path d="M2 5H32" style="stroke:var(--ink);stroke-width:3"/></svg>As built · autosave_2</div>
+   <div class="row"><span class="badge">n</span>Variance cloud<span class="badge na">n</span>Unavailable</div></div>
+  <div class="tag" style="bottom:12px">Mockup — Opus R3</div>
+ </main>
+ <aside class="insp">
+  <div class="ih"><div class="micro">Redline · plan vs save</div><h2 class="num" style="font-size:18px">main@r41 ↔ autosave_2 · 21:40</h2>
+   <div class="row"><span><b>7</b> variances</span><span class="mut">· 1 unavailable · 0 dispositioned</span></div></div>
+  <div id="vlist"></div>
+  <div class="drawer">
+   <div class="sh"><span class="micro">Evidence chain · #3</span><span class="mut">▾ drawer</span></div>
+   <div class="step"><i style="border-color:var(--plan)"></i><div><b>Plan</b> <span class="num mut">r41 · network 4be1…</span><br>C1 Iron Ore budget 720/min, Mk5 belt, 7 segments</div></div>
+   <div class="step"><i style="border-color:var(--ok)"></i><div><b>Observed</b> <span class="chip ev obs">OBS</span> <span class="num mut">sav 51c0…</span><br>Segment 3 is ConveyorBeltMk4, 212 m, on route</div></div>
+   <div class="step"><i style="border-color:var(--accent)"></i><div><b>Derived</b> <span class="chip ev der">DER</span><br>Min segment cap 480/min; budget exceeds it by 240</div></div>
+   <div class="step"><i style="border-color:var(--accent)"></i><div><b>Downstream</b> <span class="chip ev der">DER</span><br>Grass Fields Steel intake ≤ 480/min (plan 720)</div></div>
+   <div class="row" style="flex-wrap:nowrap;margin-top:4px"><span class="note">Disposition note…</span><button class="btn">Keep plan</button><button class="btn pri">Amend plan</button></div>
+   <div class="mut" style="margin-top:4px">Amend opens draft r42 · Keep records a disposition · evidence kept</div>
+  </div>
+ </aside>
+</section>
+
+<script>
+const W=840,H=852;
+// ---------- terrain (value-noise fbm; stands in for the heightmap tile) ----------
+function hash(i,j){const s=Math.sin(i*127.1+j*311.7)*43758.5453;return s-Math.floor(s)}
+function vn(x,y){const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+ const a=hash(i,j),b=hash(i+1,j),c=hash(i,j+1),d=hash(i+1,j+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+function fbm(x,y){let s=0,a=.5,f=1;for(let o=0;o<5;o++){s+=a*vn(x*f,y*f);f*=2.03;a*=.5}return s}
+const HF=new Float32Array(W*H);let mn=9,mx=-9;
+for(let y=0;y<H;y++)for(let x=0;x<W;x++){let h=fbm(x/240+3.1,y/240+7.7)+.22*(1-Math.abs(fbm(x/130+9,y/130+2)*2-1))-.12*(x<120?(120-x)/120:0);
+ HF[y*W+x]=h;if(h<mn)mn=h;if(h>mx)mx=h}
+for(let i=0;i<HF.length;i++)HF[i]=(HF[i]-mn)/(mx-mn);
+const hex=c=>{c=c.trim().slice(1);return[0,2,4].map(k=>parseInt(c.substr(k,2),16))};
+const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
+function terrain(cv,fr){const cs=getComputedStyle(fr),g=n=>hex(cs.getPropertyValue(n));
+ const bg=g('--bg'),ink=g('--ink'),mu=g('--muted'),ac=g('--accent'),dark=fr.classList.contains('theme-dark');
+ const ctx=cv.getContext('2d'),img=ctx.createImageData(W,H),d=img.data,K=24,SEA=.2;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const i=y*W+x,h=HF[i],r=x<W-1?i+1:i,l=x>0?i-1:i,dn=y<H-1?i+W:i,up=y>0?i-W:i;
+  let lum=Math.max(0,Math.min(1,.5+(-(HF[r]-HF[l])-(HF[dn]-HF[up]))*34));
+  let c=dark?mix(bg,ink,.02+lum*.09+h*.03):mix(bg,ink,.01+(1-lum)*.15);
+  if(h<SEA){c=mix(c,ac,dark?.18:.14);if(HF[r]>=SEA||HF[dn]>=SEA)c=mix(c,ac,.7)}
+  else{const b=Math.floor(h*K);if(b!==Math.floor(HF[r]*K)||b!==Math.floor(HF[dn]*K))c=mix(c,mu,b%5===0?.6:.26)}
+  d[i*4]=c[0];d[i*4+1]=c[1];d[i*4+2]=c[2];d[i*4+3]=255}
+ ctx.putImageData(img,0,0);
+ ctx.strokeStyle=`rgba(${mu.join(',')},.16)`;ctx.fillStyle=`rgba(${mu.join(',')},.8)`;ctx.font='12px ui-monospace,Consolas,monospace';
+ for(let x=105;x<W;x+=105){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();ctx.fillText(((x-420)/105*0.5).toFixed(1)+' km',x+3,H-80)}
+ for(let y=105;y<H-72;y+=105){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();ctx.fillText(((y-420)/105*0.5).toFixed(1),4,y-3)}
+}
+// ---------- world + plan data (fake, plausible) ----------
+const SITES=[
+ {id:'S1',n:'Grass Fields Steel',x:150,y:590,s:'Steel · 8 Foundries'},
+ {id:'S2',n:'Spire Coast Refinery',x:560,y:240,s:'Plastic · Rubber'},
+ {id:'S3',n:'Northern Forest Computers',x:350,y:132,s:'Computer · 4/min'},
+ {id:'S4',n:'Dune Coal Power',x:660,y:660,s:'C2 · 750 MW'},
+ {id:'S5',n:'Crater Quartz',x:200,y:400,s:'Quartz · Silica'},
+ {id:'S6',n:'Blue Crater Aluminium',x:470,y:470,s:'Alu Ingot 120'},
+ {id:'S7',n:'Main Assembly',x:340,y:600,s:'Phase 3 goals'}];
+const COR=[
+ {id:'C1',k:'belt',t:'Iron Ore',b:780,pts:[[95,735],[105,680],[150,590]],built:[[95,735],[122,690],[150,590]],bb:480},
+ {id:'C2',k:'belt',t:'Steel Beam',b:360,pts:[[150,590],[240,668],[340,600]]},
+ {id:'C3',k:'pipe',t:'Crude Oil',b:540,u:'m³',pts:[[730,520],[722,430],[640,330],[560,240]]},
+ {id:'C4',k:'pipe',t:'Water',b:300,u:'m³',pts:[[470,64],[520,150],[560,240]]},
+ {id:'C5',k:'belt',t:'Plastic · Rubber',b:600,pts:[[560,240],[450,190],[350,132]]},
+ {id:'C6',k:'power',t:'Grid C2 · 750 MW',b:0,pts:[[660,660],[480,500],[340,600],[150,590]]},
+ {id:'C7',k:'belt',t:'Quartz',b:240,pts:[[200,400],[232,270],[350,132]],built:false},
+ {id:'C8',k:'belt',t:'Bauxite',b:480,pts:[[588,572],[470,470]]},
+ {id:'C9',k:'belt',t:'Caterium',b:420,pts:[[292,262],[200,400]]},
+ {id:'C10',k:'belt',t:'Alu Ingot',b:120,pts:[[470,470],[340,600]]}];
+const NODES=[[80,728,'P'],[110,752,'P'],[60,702,'N'],[730,520,'P'],[762,548,'N'],[278,248,'N'],[307,252,'P'],[292,284,'I'],[180,440,'N'],[588,572,'P'],[612,556,'N'],[702,704,'N'],[724,684,'P']];
+const PUMPS=[[728,508,'P1'],[700,404,'P2'],[612,299,'P3']];
+const CLOUDS=[[748,532,44,32,1],[307,252,30,24,2],[120,664,34,46,3],[222,300,30,40,4],[508,122,40,30,5,1],[660,660,92,40,6],[560,240,96,38,7]];
+// ---------- svg helpers ----------
+const PD=p=>'M'+p.map(q=>q.join(' ')).join(' L');
+const sty=o=>`style="${o}"`;
+function mid(p){const a=p[Math.floor((p.length-1)/2)],b=p[Math.floor((p.length-1)/2)+1];return[(a[0]+b[0])/2,(a[1]+b[1])/2]}
+function pill(x,y,txt,col){const w=txt.length*7.3+14;return `<rect x="${x-w/2}" y="${y-11}" width="${w}" height="22" rx="6" ${sty('fill:var(--panel);stroke:'+(col||'var(--line)')+';opacity:.94')}/><text x="${x}" y="${y+4}" text-anchor="middle" ${sty('font:12px ui-monospace,Consolas,monospace;fill:var(--ink)')}>${txt}</text>`}
+function corr(c,d,ink,b){b=b??c.b;const w=c.k==='power'?2.5:2+b/120,L='stroke-linecap:round;stroke-linejoin:round;fill:none;';
+ if(c.k==='belt')return `<path d="${d}" ${sty(L+'stroke:'+(ink||'var(--ink)')+';stroke-opacity:.82;stroke-width:'+w)}/>`;
+ if(c.k==='pipe')return `<path d="${d}" ${sty(L+'stroke:var(--accent);stroke-width:'+(w+3))}/><path d="${d}" ${sty(L+'stroke:var(--bg);stroke-width:'+(w-1.5))}/>`;
+ return `<path d="${d}" ${sty(L+'stroke:var(--warn);stroke-width:2.5;stroke-dasharray:3 6 12 6')}/>`}
+function cloud(cx,cy,rx,ry,dashed){const n=Math.round((rx+ry)/7);let p=[];for(let k=0;k<n;k++){const a=k/n*Math.PI*2;p.push([cx+rx*Math.cos(a),cy+ry*Math.sin(a)])}
+ let d=`M${p[0][0].toFixed(1)} ${p[0][1].toFixed(1)}`;for(let k=1;k<=n;k++){const q=p[k%n],pr=p[k-1],r=Math.hypot(q[0]-pr[0],q[1]-pr[1])*.62;d+=` A${r.toFixed(1)} ${r.toFixed(1)} 0 0 1 ${q[0].toFixed(1)} ${q[1].toFixed(1)}`}
+ return `<path d="${d}Z" ${sty('fill:'+(dashed?'none':'rgba(255,107,94,.07)')+';stroke:'+(dashed?'var(--muted)':'var(--bad)')+';stroke-width:2;'+(dashed?'stroke-dasharray:5 4':''))}/>`}
+function site(t,sel,ghost){const w=Math.max(t.n.length,t.s.length)*7.6+22,x=t.x-w/2,y=t.y-23,on=sel===t.id;
+ let g=ghost?`<rect x="${x-6}" y="${y-5}" width="${w}" height="46" rx="6" ${sty('fill:none;stroke:var(--plan);stroke-width:1.5;stroke-dasharray:5 4')}/>`:'';
+ return g+(on?`<rect x="${x-5}" y="${y-5}" width="${w+10}" height="56" rx="10" ${sty('fill:var(--accent);opacity:.18')}/>`:'')+
+ `<rect x="${x}" y="${y}" width="${w}" height="46" rx="6" ${sty('fill:var(--panel);stroke:'+(on?'var(--accent)':'var(--ink)')+';stroke-opacity:'+(on?1:.55)+';stroke-width:'+(on?2.5:1.2))}/>`+
+ `<path d="M${x+w-14} ${y} L${x+w} ${y+14} M${x+w-8} ${y} L${x+w} ${y+8}" ${sty('stroke:var(--muted);stroke-width:1.2')}/>`+
+ `<text x="${x+10}" y="${y+19}" ${sty('font:600 14px system-ui,Segoe UI,sans-serif;fill:var(--ink)')}>${t.n}</text><text x="${x+10}" y="${y+37}" ${sty('font:12px ui-monospace,Consolas,monospace;fill:var(--muted)')}>${t.s}</text>`}
+function node(n,alpha){const[x,y,p]=n,f=p==='P'?'var(--ink)':'none',da=p==='I'?'stroke-dasharray:2 2;':'';
+ return `<path d="M${x} ${y-7} l7 7 -7 7 -7 -7z" ${sty('fill:'+f+';stroke:var(--ink);stroke-width:1.5;'+da+'opacity:'+(alpha||.9))}/>`}
+function drawMap(svg,mode,sel){let s='';
+ if(mode==='atlas'){
+  for(const c of COR){if(c.id===sel)s+=`<path d="${PD(c.pts)}" ${sty('fill:none;stroke:var(--accent);stroke-opacity:.25;stroke-width:22;stroke-linecap:round;stroke-linejoin:round')}/>`;s+=corr(c,PD(c.pts))}
+  s+=`<circle cx="292" cy="262" r="50" ${sty('fill:rgba(240,180,80,.08);stroke:var(--warn);stroke-width:2.5;stroke-dasharray:8 5')}/>`;
+  NODES.forEach(n=>s+=node(n));
+  for(const c of COR){if(c.k==='power'){s+=pill(560,560,c.t,'var(--warn)');continue}const[m0,m1]=mid(c.pts);s+=pill(m0,m1,`${c.t} ${c.b}${c.u?' '+c.u:''}`,c.id===sel?'var(--accent)':null)}
+  s+=pill(292,326,'CONTENDED · Caterium 780 / 600','var(--warn)');
+  if(sel==='C3')PUMPS.forEach(([x,y,l])=>s+=`<rect x="${x-7}" y="${y-7}" width="14" height="14" rx="3" ${sty('fill:var(--accent);stroke:var(--bg);stroke-width:2')}/><text x="${x+12}" y="${y+5}" ${sty('font:600 12px ui-monospace,Consolas,monospace;fill:var(--accent)')}>${l}</text>`);
+  SITES.forEach(t=>s+=site(t,sel));
+ }else{
+  for(const c of COR){const w=c.k==='power'?2.5:2+c.b/120;s+=`<path d="${PD(c.pts)}" ${sty('fill:none;stroke:var(--plan);stroke-opacity:.8;stroke-width:'+w+';stroke-dasharray:7 6;stroke-linecap:round')}/>`}
+  for(const c of COR){if(c.built===false)continue;s+=corr(c,PD(c.built||c.pts),null,c.bb)}
+  NODES.forEach(n=>s+=node(n,.75));
+  SITES.forEach(t=>s+=site(t,null,['S2','S4'].includes(t.id)));
+  CLOUDS.forEach(([x,y,rx,ry,n,na])=>{s+=cloud(x,y,rx,ry,na);const bx=x+rx*.72,by=y-ry*.78;
+   s+=`<circle cx="${bx}" cy="${by}" r="12" ${sty(na?'fill:var(--bg);stroke:var(--muted);stroke-width:1.5;stroke-dasharray:3 2':'fill:var(--bad)')}/><text x="${bx}" y="${by+4}" text-anchor="middle" ${sty('font:700 12px ui-monospace,Consolas,monospace;fill:'+(na?'var(--muted)':'var(--bg)'))}>${n}</text>`});
+ }
+ svg.innerHTML=s}
+// ---------- shell ----------
+const IC={Atlas:'M2 5l5-2 6 2 5-2v12l-5 2-6-2-5 2zM7 3v12M13 5v12',Charter:'M4 18V2M4 3h11l-3 4 3 4H4',Options:'M5 2v6a5 5 0 0 0 5 5h0a5 5 0 0 1 5 5M5 8v10M15 2v6',
+ Redline:'M3 12a3 3 0 0 1 3-4 4 4 0 0 1 8 0 3 3 0 0 1 2 6H5a2 2 0 0 1-2-2zM6 17h8','World & Library':'M10 2l8 4-8 4-8-4zM2 10l8 4 8-4M2 14l8 4 8-4'};
+function shell(fr){const dark=fr.classList.contains('theme-dark'),nav=fr.dataset.nav;
+ fr.insertAdjacentHTML('afterbegin',`<header class="top">
+  <svg width="26" height="26" viewBox="0 0 26 26"><rect x="1" y="1" width="24" height="24" rx="6" style="fill:none;stroke:var(--accent);stroke-width:2"/><path d="M5 17l5-8 4 5 3-3 4 6" style="fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round"/></svg>
+  <span class="app">World Architect</span><span class="sep"></span>
+  <span>Northern Works <span class="mut">/</span> <span class="num">main@r41</span></span>
+  <span class="chip"><span class="dot"></span>autosave_2 · 21:40 · Observed</span>
+  <span class="chip num">Docs 1.2 · 7d3f…a19 · Catalog 9c1e…04b</span>
+  <span class="grow"></span><span class="chip"><span class="dot" style="background:var(--muted)"></span>Live: off</span>
+  <span class="seg"><b class="${dark?'on':''}">☾</b><b class="${dark?'':'on'}">☀</b></span>
+  <button class="btn">Check plan</button><button class="btn pri">Draft allocation</button></header>
+  <nav class="rail"><div class="pblock"><div class="micro">Project</div><div class="pname">Northern Works</div><div class="mut">northern-works.ussp</div><div class="mut num">3 forks · 41 revs</div></div>
+  ${Object.keys(IC).map(k=>`<div class="nav ${k===nav?'on':''}"><svg viewBox="0 0 20 20"><path d="${IC[k]}" style="fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round"/></svg>${k}</div>`).join('')}
+  <div class="rfoot"><div class="micro">World snapshot</div><div class="num">autosave_2 · 21:40</div><div class="mut">Journal: 0 pending</div><div class="mut">Solver: idle · spare warm</div></div>
+  <div class="collapse">« collapse</div></nav>`)}
+function cards(fr){const L=fr.querySelector('.layers');if(!L)return;
+ L.innerHTML=`<div class="micro">Layers</div>`+[['Hillshade · heightmap',1,'DER'],['Contours 10 m',1],['Grid 500 m',1],['Nodes & wells',1,'CATALOG'],['Corridors',1],['Power circuits',1],['Contention',1],['Telemetry',0,'off']]
+  .map(([t,o,c])=>`<div class="row"><span class="cb ${o?'on':''}"></span>${t}${c?` <span class="mut" style="font-size:12px;margin-left:auto">${c}</span>`:''}</div>`).join('');
+ fr.querySelector('.legend').innerHTML=`<div class="micro">Legend · width ∝ budget</div>
+  <div class="row"><svg width="40" height="14"><path d="M2 7H38" style="stroke:var(--ink);stroke-width:6;stroke-linecap:round"/></svg>Belt corridor</div>
+  <div class="row"><svg width="40" height="14"><path d="M2 7H38" style="stroke:var(--accent);stroke-width:10"/><path d="M2 7H38" style="stroke:var(--bg);stroke-width:5"/></svg>Pipe corridor</div>
+  <div class="row"><svg width="40" height="14"><path d="M2 7H38" style="stroke:var(--warn);stroke-width:2.5;stroke-dasharray:3 6 12 6"/></svg>Grid tie</div>
+  <div class="row"><svg width="40" height="18"><path d="M12 2l7 7-7 7-7-7z" style="fill:var(--ink)"/><path d="M30 2l7 7-7 7-7-7z" style="fill:none;stroke:var(--ink);stroke-width:1.5"/></svg>Pure · normal</div>
+  <div class="row"><svg width="40" height="18"><circle cx="20" cy="9" r="7" style="fill:none;stroke:var(--warn);stroke-width:2;stroke-dasharray:4 3"/></svg>Contended nodes</div>`;
+ fr.querySelector('.scrub').innerHTML=`<div><div class="micro">Phase</div><div><b>3 of 4</b> <span class="mut">· r41</span></div></div>
+  <div class="track">${[['1 Foundations','Steel 360/min',0,22],['2 Oil & Plastic','Plastic 120/min',23,24],['3 Computers','Computer 4/min · ACU 2',48,28,1],['4 Elevator P4','Thermal Prop. 1',77,23]]
+   .map(([t,g,l,w,on])=>`<div class="ph ${on?'on':''}" style="left:${l}%;width:${w}%"><div class="micro">${t}</div><div class="mut" style="font-size:12px">${g}</div></div>`).join('')}</div>
+  <div class="mut" style="text-align:right">◀ ▶ step · goals per phase in Charter</div>`}
+const VL=[['Extraction',[[1,'Crude Oil well RD-03 · clock','600 @250%','480 @200%','−120','obs'],[2,'Caterium CF-02 · extractor','Mk3 240','none','−240','obs']]],
+ ['Corridors',[[3,'C1 Iron Ore · as-built cap','780 Mk5','480 Mk4','−300','obs',1],[4,'C7 Quartz belt','240','not found','−240','obs'],[5,'C4 Water · lift check','≤ 50 m','—','—','na']]],
+ ['Circuits',[[6,'C2 Dune Coal · capacity','750 MW','600 MW','−150','der']]],
+ ['Machines',[[7,'Spire Coast · Refineries','12','10','−2','obs',0,1]]]];
+document.getElementById('vlist').innerHTML=VL.map(([g,rows])=>`<div class="vgrp"><span class="micro">${g}</span><span class="micro">plan · save · Δ</span></div>`+rows.map(([n,t,p,v,d,e,on,cf])=>
+ `<div class="vrow ${on?'on':''}"><span class="badge ${e==='na'?'na':''}">${n}</span><div><div class="row" style="justify-content:space-between">${t}${cf?'<span class="chip conflict">Manual vs Observed</span>':''}</div>
+ <div class="vnum num"><span class="mut">${p}</span><span>${v}</span><span class="${e==='na'?'mut':'bad'}">${d}</span><span class="chip ev ${e}">${e==='na'?'N/A':e.toUpperCase()}</span></div></div></div>`).join('')).join('');
+document.querySelector('#f3 .strip').insertAdjacentHTML('beforeend',[['autosave_0','19:05','base · r41',0,'3f9a…'],['autosave_1','19:35','2 Δ',2,'a1c2…'],['autosave_2','20:05','3 Δ',3,'77de…'],['autosave_0','20:35','5 Δ',5,'0b4e…'],['autosave_1','21:10','6 Δ',6,'c93f…'],['autosave_2','21:40','7 Δ · current',7,'51c0…']]
+ .map(([n,t,l,k,h],i)=>`<div class="snap ${i===0?'base':''} ${i===5?'on':''}"><div class="row" style="justify-content:space-between"><span class="num">${n}</span><span class="num mut">${t}</span></div>
+ <div class="bar" style="height:6px"><i style="width:${k/7*100}%;background:var(--bad)"></i></div><div class="row" style="justify-content:space-between"><span style="font-size:12px" class="${k?'':'mut'}">${l}</span><span class="num mut" style="font-size:12px">${h}</span></div></div>`).join(''));
+// ---------- dial + sparkline ----------
+(function(){const cx=110,cy=112,r=80,pt=(v,rr)=>{const a=Math.PI*v/1200;return[cx-(rr||r)*Math.cos(a),cy-(rr||r)*Math.sin(a)]};
+ const arc=(a,b)=>{const p=pt(a),q=pt(b);return `M${p[0]} ${p[1]} A${r} ${r} 0 0 1 ${q[0]} ${q[1]}`};
+ let s=`<path d="${arc(0,1200)}" ${sty('fill:none;stroke:var(--panel-2);stroke-width:14')}/><path d="${arc(600,1200)}" ${sty('fill:none;stroke:var(--line);stroke-width:14')}/><path d="${arc(0,540)}" ${sty('fill:none;stroke:var(--accent);stroke-width:14')}/>`;
+ [[300,'Mk1 300'],[600,'Mk2 600'],[1200,'2×Mk2']].forEach(([v,l])=>{const a=pt(v,r-11),b=pt(v,r+11),t=pt(v,r+22);s+=`<path d="M${a[0]} ${a[1]}L${b[0]} ${b[1]}" ${sty('stroke:'+(v===600?'var(--bad)':'var(--muted)')+';stroke-width:'+(v===600?3:2))}/><text x="${t[0]}" y="${t[1]}" text-anchor="${v===1200?'end':'middle'}" ${sty('font:12px ui-monospace,Consolas,monospace;fill:var(--muted)')}>${l}</text>`});
+ const n=pt(540,r-24);s+=`<path d="M${cx} ${cy}L${n[0]} ${n[1]}" ${sty('stroke:var(--ink);stroke-width:2.5;stroke-linecap:round')}/><circle cx="${cx}" cy="${cy}" r="5" ${sty('fill:var(--ink)')}/>`;
+ document.getElementById('dial').innerHTML=s;
+ const P=[[0,112],[.1,120],[.2,134],[.3,146],[.45,150],[.62,141],[.7,148],[.8,158],[.9,156],[1,150],[1.05,149],[1.15,155],[1.25,158],[1.42,152]];
+ const X=k=>8+k/1.42*368,Y=m=>86-(m-105)/60*76;let d='M'+P.map(([k,m])=>`${X(k).toFixed(1)} ${Y(m).toFixed(1)}`).join(' L');
+ let g=`<rect x="${X(.8)}" y="4" width="${X(.9)-X(.8)}" height="84" ${sty('fill:var(--panel-2)')}/><text x="${X(.85)}" y="16" text-anchor="middle" ${sty('font:12px ui-monospace,Consolas,monospace;fill:var(--muted)')}>tun</text>`+
+ `<path d="${d} L${X(1.42)} 90 L${X(0)} 90Z" ${sty('fill:var(--accent);opacity:.12')}/><path d="${d}" ${sty('fill:none;stroke:var(--accent);stroke-width:2')}/>`;
+ [[0,112,'P1'],[.62,141,'P2'],[1.05,149,'P3']].forEach(([k,m,l])=>g+=`<path d="M${X(k)} ${Y(m)}V90" ${sty('stroke:var(--muted);stroke-dasharray:2 2')}/><rect x="${X(k)-5}" y="${Y(m)-5}" width="10" height="10" rx="2" ${sty('fill:var(--accent)')}/><text x="${X(k)+8}" y="${Y(m)+16}" ${sty('font:600 12px ui-monospace,Consolas,monospace;fill:var(--ink)')}>${l}</text>`);
+ g+=`<text x="380" y="94" text-anchor="end" ${sty('font:12px ui-monospace,Consolas,monospace;fill:var(--muted)')}>1.42 km · 112–158 m</text>`;
+ document.getElementById('spark').innerHTML=g})();
+// ---------- render frames ----------
+for(const[id,mode,sel]of[['f1','atlas','C3'],['f2','atlas','S2'],['f3','redline',null]]){const fr=document.getElementById(id);shell(fr);cards(fr);terrain(fr.querySelector('canvas'),fr);drawMap(fr.querySelector('svg.ov'),mode,sel)}
+</script>
+</body></html>

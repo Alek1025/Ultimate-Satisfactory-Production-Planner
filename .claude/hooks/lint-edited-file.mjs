@@ -1,7 +1,7 @@
 // PostToolUse hook (Edit|Write): lint the file the agent just changed.
 // Exit 2 sends the problems back to the agent; exit 0 stays silent.
-import { ESLint } from 'eslint';
 import path from 'node:path';
+import { existsSync } from 'node:fs';
 
 const input = JSON.parse(await new Promise((resolve) => {
   let s = '';
@@ -12,6 +12,15 @@ const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
 if (!file || !/\.(ts|tsx|js|mjs)$/.test(file)) process.exit(0);
 const rel = path.relative(root, path.resolve(root, file));
 if (rel.startsWith('..') || path.isAbsolute(rel)) process.exit(0);
+
+// No ESLint setup at the root yet (e.g. between the v1 archive and the rewrite): skip quietly.
+if (!existsSync(path.join(root, 'eslint.config.js'))) process.exit(0);
+let ESLint;
+try {
+  ({ ESLint } = await import('eslint'));
+} catch {
+  process.exit(0);
+}
 
 const eslint = new ESLint({ cwd: root });
 if (await eslint.isPathIgnored(file)) process.exit(0);
